@@ -12,7 +12,7 @@ import {
 } from "@/features/restaurant/backend/error";
 
 export const registerRestaurantRoutes = (app: Hono<AppEnv>) => {
-  app.get("/restaurants/markers", async (c) => {
+  app.get("/api/restaurants/markers", async (c) => {
     const supabase = getSupabase(c);
     const logger = getLogger(c);
 
