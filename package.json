@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "cross-env TAILWIND_DISABLE_LIGHTNING=1 next dev --turbopack",
+    "build": "cross-env TAILWIND_DISABLE_LIGHTNING=1 next build",
+    "start": "cross-env TAILWIND_DISABLE_LIGHTNING=1 next start",
+    "lint": "cross-env TAILWIND_DISABLE_LIGHTNING=1 next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^4",
@@ -50,6 +50,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.0",
     "lightningcss": "^1.30.2",
