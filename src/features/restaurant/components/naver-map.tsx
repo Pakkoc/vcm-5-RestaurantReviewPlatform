@@ -54,6 +54,27 @@ export const NaverMap = ({
   );
 
   useEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    const container = containerRef.current;
+    let targetElement = container.parentElement;
+    
+    while (targetElement && targetElement.offsetHeight === 0) {
+      targetElement = targetElement.parentElement;
+    }
+    
+    if (targetElement && targetElement.offsetHeight > 0) {
+      const height = targetElement.offsetHeight;
+      container.style.height = `${height}px`;
+      if (container.parentElement) {
+        container.parentElement.style.height = `${height}px`;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (
       !isScriptReady ||
       mapInstanceRef.current !== null ||
@@ -201,8 +222,8 @@ export const NaverMap = ({
     isScriptLoading || (isMarkersLoading && !markersQuery.isError);
 
   return (
-    <div className={clsx("relative h-full min-h-[480px] w-full", className)}>
-      <div ref={containerRef} className="h-full w-full min-h-[480px]" />
+    <div className={clsx("relative h-full w-full", className)}>
+      <div ref={containerRef} className="h-full w-full" style={{ minHeight: '100%' }} />
       {shouldShowSpinner ? <MapLoadingSpinner /> : null}
       {isScriptError ? (
         <MapErrorFallback
