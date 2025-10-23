@@ -79,7 +79,7 @@ export default function Home() {
     <>
       <Script
         strategy="afterInteractive"
-        src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}`}
+        src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID}`}
       />
       <div ref={ref} style={{ height: '80vh' }} />
     </>
@@ -206,7 +206,7 @@ export async function GET(req: Request) {
 
 ```bash
 # 공개(지도): 도메인 제한 필수
-NEXT_PUBLIC_NAVER_MAP_CLIENT_ID=발급받은_지도_Client_ID
+NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID=발급받은_지도_Client_ID
 
 # 비공개(서버 전용)
 NAVER_SEARCH_API_CLIENT_ID=발급받은_검색_Client_ID

@@ -36,11 +36,12 @@ export const useNaverMapScript = () => {
       return;
     }
 
+    const clientId = process.env.NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID;
     const keyId = process.env.NEXT_PUBLIC_NAVER_MAPS_KEY_ID;
 
-    if (!keyId) {
+    if (!clientId && !keyId) {
       console.error(
-        "NEXT_PUBLIC_NAVER_MAPS_KEY_ID is not defined. Please configure the environment variable.",
+        "Neither NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID nor NEXT_PUBLIC_NAVER_MAPS_KEY_ID is defined. Please configure one of the environment variables.",
       );
       setStatus("error");
       return;
@@ -88,7 +89,12 @@ export const useNaverMapScript = () => {
       script.setAttribute("nonce", effectiveNonce);
     }
     const scriptUrl = new URL(NAVER_MAP_SCRIPT_URL);
-    scriptUrl.searchParams.set("ncpKeyId", keyId);
+
+    if (clientId) {
+      scriptUrl.searchParams.set("ncpClientId", clientId);
+    } else if (keyId) {
+      scriptUrl.searchParams.set("ncpKeyId", keyId);
+    }
 
     const serviceMode = process.env.NEXT_PUBLIC_NAVER_MAPS_SERVICE_MODE;
     if (serviceMode) {
