@@ -3,7 +3,6 @@ type DirectiveSources = readonly string[];
 const SELF = "'self'" as const;
 const UNSAFE_EVAL = "'unsafe-eval'" as const;
 const UNSAFE_INLINE = "'unsafe-inline'" as const;
-const STRICT_DYNAMIC = "'strict-dynamic'" as const;
 const DATA = "data:" as const;
 const BLOB = "blob:" as const;
 
@@ -24,20 +23,17 @@ const SUPABASE_DOMAINS: DirectiveSources = [
 
 const serialize = (sources: DirectiveSources) => sources.join(" ");
 
-const scriptSrc = (nonce: string) =>
+const scriptSrc = () =>
   serialize([
     SELF,
-    `'nonce-${nonce}'`,
-    STRICT_DYNAMIC,
     UNSAFE_INLINE,
     UNSAFE_EVAL,
     ...NAVER_DOMAINS,
   ]);
 
-const styleSrc = (nonce: string) =>
+const styleSrc = () =>
   serialize([
     SELF,
-    `'nonce-${nonce}'`,
     UNSAFE_INLINE,
     ...NAVER_DOMAINS,
   ]);
@@ -67,7 +63,7 @@ const fontSrc = () => serialize([SELF, DATA]);
 
 const frameSrc = () => serialize([NAVER_SCRIPT_ENDPOINT, ...NAVER_DOMAINS]);
 
-export const createContentSecurityPolicy = (nonce: string) =>
+export const createContentSecurityPolicy = (_nonce: string) =>
   [
     `default-src ${SELF}`,
     `base-uri ${SELF}`,
@@ -75,10 +71,10 @@ export const createContentSecurityPolicy = (nonce: string) =>
     `form-action ${SELF}`,
     `frame-ancestors ${SELF}`,
     "upgrade-insecure-requests",
-    `script-src ${scriptSrc(nonce)}`,
-    `script-src-elem ${scriptSrc(nonce)}`,
-    `style-src ${styleSrc(nonce)}`,
-    `style-src-elem ${styleSrc(nonce)}`,
+    `script-src ${scriptSrc()}`,
+    `script-src-elem ${scriptSrc()}`,
+    `style-src ${styleSrc()}`,
+    `style-src-elem ${styleSrc()}`,
     `style-src-attr ${styleAttr()}`,
     `img-src ${imgSrc()}`,
     `connect-src ${connectSrc()}`,
