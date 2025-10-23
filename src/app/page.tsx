@@ -93,7 +93,7 @@ export default function HomePage({ params }: HomePageProps) {
           </button>
         </form>
       </header>
-      <section className="relative flex-1">
+      <section className="relative flex-1 min-h-[480px]">
         {hoveredMarker ? (
           <aside className="pointer-events-none absolute left-6 top-6 z-20 max-w-xs rounded-xl border border-slate-200 bg-white/90 p-4 text-left shadow-lg">
             <h2 className="text-base font-semibold text-slate-900">

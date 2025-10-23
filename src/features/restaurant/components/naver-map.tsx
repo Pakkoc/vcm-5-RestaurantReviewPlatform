@@ -201,8 +201,8 @@ export const NaverMap = ({
     isScriptLoading || (isMarkersLoading && !markersQuery.isError);
 
   return (
-    <div className={clsx("relative h-full w-full", className)}>
-      <div ref={containerRef} className="h-full w-full" />
+    <div className={clsx("relative h-full min-h-[480px] w-full", className)}>
+      <div ref={containerRef} className="absolute inset-0" />
       {shouldShowSpinner ? <MapLoadingSpinner /> : null}
       {isScriptError ? (
         <MapErrorFallback

@@ -21,7 +21,10 @@ export default async function RootLayout({
 
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className="antialiased font-sans">
+      <body
+        className="antialiased font-sans"
+        data-csp-nonce={nonce ?? undefined}
+      >
         <Providers cspNonce={nonce}>
           <CurrentUserProvider initialState={currentUser}>
             {children}

@@ -14,6 +14,12 @@ type ScriptStatus = "idle" | "loading" | "ready" | "error";
 const NAVER_MAP_SCRIPT_ID = "naver-maps-sdk";
 
 const hasNaverMap = () => typeof window !== "undefined" && !!window.naver?.maps;
+const readNonceFromDom = () => {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  return document.body.getAttribute("data-csp-nonce");
+};
 
 export const useNaverMapScript = () => {
   const [status, setStatus] = useState<ScriptStatus>("idle");
@@ -77,8 +83,9 @@ export const useNaverMapScript = () => {
 
     const script = document.createElement("script");
     script.id = NAVER_MAP_SCRIPT_ID;
-    if (cspNonce) {
-      script.setAttribute("nonce", cspNonce);
+    const effectiveNonce = cspNonce ?? readNonceFromDom();
+    if (effectiveNonce) {
+      script.setAttribute("nonce", effectiveNonce);
     }
     script.src = `${NAVER_MAP_SCRIPT_URL}?ncpKeyId=${keyId}`;
     script.async = true;
