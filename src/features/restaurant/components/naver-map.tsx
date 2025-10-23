@@ -26,10 +26,6 @@ type MarkerEntry = {
   listeners: Array<ReturnType<typeof naver.maps.Event.addListener>>;
 };
 
-const createLatLng = (latitude: number, longitude: number) => {
-  return new window.naver.maps.LatLng(latitude, longitude);
-};
-
 export const NaverMap = ({
   className,
   onMarkerClick,
@@ -66,6 +62,13 @@ export const NaverMap = ({
       return;
     }
 
+    if (!window.naver?.maps?.LatLng) {
+      return;
+    }
+
+    const createLatLng = (latitude: number, longitude: number) =>
+      new window.naver.maps.LatLng(latitude, longitude);
+
     const center = createLatLng(
       NAVER_MAP_DEFAULT_CENTER.latitude,
       NAVER_MAP_DEFAULT_CENTER.longitude,
@@ -95,15 +98,23 @@ export const NaverMap = ({
     markerEntriesRef.current = [];
 
     if (markers.length === 0) {
-      map.setCenter(
-        createLatLng(
-          NAVER_MAP_DEFAULT_CENTER.latitude,
-          NAVER_MAP_DEFAULT_CENTER.longitude,
-        ),
-      );
-      map.setZoom(NAVER_MAP_DEFAULT_ZOOM);
+      if (window.naver?.maps?.LatLng && typeof map.setCenter === "function") {
+        map.setCenter(
+          new window.naver.maps.LatLng(
+            NAVER_MAP_DEFAULT_CENTER.latitude,
+            NAVER_MAP_DEFAULT_CENTER.longitude,
+          ),
+        );
+      }
       return;
     }
+
+    if (!window.naver?.maps?.LatLng) {
+      return;
+    }
+
+    const createLatLng = (latitude: number, longitude: number) =>
+      new window.naver.maps.LatLng(latitude, longitude);
 
     let bounds: naver.maps.LatLngBounds | null = null;
 
@@ -157,9 +168,13 @@ export const NaverMap = ({
 
     if (bounds) {
       if (markers.length === 1) {
-        map.setCenter(bounds.getCenter());
-        map.setZoom(NAVER_MAP_DEFAULT_ZOOM);
-      } else {
+        if (typeof map.setCenter === "function") {
+          map.setCenter(bounds.getCenter());
+        }
+        if (typeof map.setZoom === "function") {
+          map.setZoom(NAVER_MAP_DEFAULT_ZOOM);
+        }
+      } else if (typeof map.fitBounds === "function") {
         map.fitBounds(bounds);
       }
     }
