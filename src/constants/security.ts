@@ -2,6 +2,8 @@ type DirectiveSources = readonly string[];
 
 const SELF = "'self'" as const;
 const UNSAFE_EVAL = "'unsafe-eval'" as const;
+const UNSAFE_INLINE = "'unsafe-inline'" as const;
+const STRICT_DYNAMIC = "'strict-dynamic'" as const;
 const DATA = "data:" as const;
 const BLOB = "blob:" as const;
 
@@ -12,6 +14,7 @@ const NAVER_DOMAINS: DirectiveSources = [
   "https://*.naver.net",
   "https://*.ntruss.com",
   "https://*.pstatic.net",
+  "https://*.map.naver.net",
 ];
 
 const SUPABASE_DOMAINS: DirectiveSources = [
@@ -25,6 +28,8 @@ const scriptSrc = (nonce: string) =>
   serialize([
     SELF,
     `'nonce-${nonce}'`,
+    STRICT_DYNAMIC,
+    UNSAFE_INLINE,
     UNSAFE_EVAL,
     ...NAVER_DOMAINS,
   ]);
@@ -33,11 +38,11 @@ const styleSrc = (nonce: string) =>
   serialize([
     SELF,
     `'nonce-${nonce}'`,
-    "'unsafe-inline'",
+    UNSAFE_INLINE,
     ...NAVER_DOMAINS,
   ]);
 
-const styleAttr = () => serialize(["'unsafe-inline'"]);
+const styleAttr = () => serialize([UNSAFE_INLINE]);
 
 const imgSrc = () =>
   serialize([
@@ -55,6 +60,7 @@ const connectSrc = () =>
     ...SUPABASE_DOMAINS,
     "wss:",
     "https:",
+    "http://localhost:3000",
   ]);
 
 const fontSrc = () => serialize([SELF, DATA]);
@@ -68,6 +74,7 @@ export const createContentSecurityPolicy = (nonce: string) =>
     "object-src 'none'",
     `form-action ${SELF}`,
     `frame-ancestors ${SELF}`,
+    "upgrade-insecure-requests",
     `script-src ${scriptSrc(nonce)}`,
     `script-src-elem ${scriptSrc(nonce)}`,
     `style-src ${styleSrc(nonce)}`,
