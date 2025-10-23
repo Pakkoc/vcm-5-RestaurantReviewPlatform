@@ -43,6 +43,10 @@
      ```
 
      (필요 시 `&callback=initMap`, `&submodules=geocoder` 등 추가) ([Naver Maps][1])
+   * **프로젝트 환경 변수 구조**
+     - `NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID`: 구 `ncpClientId` 기반 로딩. 타일 CDN이 `*.pstatic.net`으로 유지되어 사내 방화벽 허용 도메인과 일치할 때 사용
+     - `NEXT_PUBLIC_NAVER_MAPS_KEY_ID`: 통합 키(`ncpKeyId`) 기반 로딩. 신규 발급 키만 보유한 경우 사용
+     - 두 값 중 우선순위는 `CLIENT_ID` > `KEY_ID`. 둘 다 비어 있으면 SDK 로딩이 중단되고 콘솔에 오류 로그가 출력됨
 3. **Next.js에서 배치 규칙**
 
    * `beforeInteractive` 스크립트는 **Pages Router: `pages/_document.js`**, **App Router: `app/layout.tsx`** 에서만 허용.
@@ -176,6 +180,7 @@ export async function GET(req: Request) {
 * **CORS 오류**: 브라우저에서 OpenAPI 직접 호출 시 → **서버 프록시**로 경유. (NCP 트러블슈팅 권고) ([Ncloud Docs Guide][3])
 * **좌표계 혼동**: 지역 API 응답 `mapx/mapy`는 **WGS84 × 10⁷ 정수** → `lng/lat` 환산 필수. ([NAVER Developers][2])
 * **Next.js Script 배치**: `beforeInteractive`는 **`_document`/`app/layout`에서만 허용**. 페이지에서는 `afterInteractive` 사용. ([Next.js][4])
+* **타일 CDN 차단**: `ncpKeyId` 기반 로딩 시 `nrbe.map.naver.net`, `ncpClientId` 기반 로딩 시 `nrbe.pstatic.net` 도메인이 사용됨. 방화벽에서 특정 CDN만 허용된 경우 화이트리스트를 조정하거나 환경 변수를 통해 다른 키 타입을 사용한다.
 
 ---
 

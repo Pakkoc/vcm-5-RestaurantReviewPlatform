@@ -87,7 +87,20 @@ export const useNaverMapScript = () => {
     if (effectiveNonce) {
       script.setAttribute("nonce", effectiveNonce);
     }
-    script.src = `${NAVER_MAP_SCRIPT_URL}?ncpKeyId=${keyId}`;
+    const scriptUrl = new URL(NAVER_MAP_SCRIPT_URL);
+    scriptUrl.searchParams.set("ncpKeyId", keyId);
+
+    const serviceMode = process.env.NEXT_PUBLIC_NAVER_MAPS_SERVICE_MODE;
+    if (serviceMode) {
+      scriptUrl.searchParams.set("serviceMode", serviceMode);
+    }
+
+    const submodules = process.env.NEXT_PUBLIC_NAVER_MAPS_SUBMODULES;
+    if (submodules) {
+      scriptUrl.searchParams.set("submodules", submodules);
+    }
+
+    script.src = scriptUrl.toString();
     script.async = true;
 
     script.onload = () => {
