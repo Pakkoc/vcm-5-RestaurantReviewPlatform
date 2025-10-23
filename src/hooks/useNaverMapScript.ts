@@ -28,11 +28,11 @@ export const useNaverMapScript = () => {
       return;
     }
 
-    const clientId = process.env.NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID;
+    const keyId = process.env.NEXT_PUBLIC_NAVER_MAPS_KEY_ID;
 
-    if (!clientId) {
+    if (!keyId) {
       console.error(
-        "NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID is not defined. Please configure the environment variable.",
+        "NEXT_PUBLIC_NAVER_MAPS_KEY_ID is not defined. Please configure the environment variable.",
       );
       setStatus("error");
       return;
@@ -75,7 +75,7 @@ export const useNaverMapScript = () => {
 
     const script = document.createElement("script");
     script.id = NAVER_MAP_SCRIPT_ID;
-    script.src = `${NAVER_MAP_SCRIPT_URL}?ncpClientId=${clientId}`;
+    script.src = `${NAVER_MAP_SCRIPT_URL}?ncpKeyId=${keyId}`;
     script.async = true;
 
     script.onload = () => {
