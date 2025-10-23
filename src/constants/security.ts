@@ -11,7 +11,7 @@ const NAVER_DOMAINS: DirectiveSources = [
   "https://*.naver.com",
   "https://*.naver.net",
   "https://*.ntruss.com",
-  "https://ssl.pstatic.net",
+  "https://*.pstatic.net",
 ];
 
 const SUPABASE_DOMAINS: DirectiveSources = [
@@ -33,8 +33,11 @@ const styleSrc = (nonce: string) =>
   serialize([
     SELF,
     `'nonce-${nonce}'`,
+    "'unsafe-inline'",
     ...NAVER_DOMAINS,
   ]);
+
+const styleAttr = () => serialize(["'unsafe-inline'"]);
 
 const imgSrc = () =>
   serialize([
@@ -69,6 +72,7 @@ export const createContentSecurityPolicy = (nonce: string) =>
     `script-src-elem ${scriptSrc(nonce)}`,
     `style-src ${styleSrc(nonce)}`,
     `style-src-elem ${styleSrc(nonce)}`,
+    `style-src-attr ${styleAttr()}`,
     `img-src ${imgSrc()}`,
     `connect-src ${connectSrc()}`,
     `font-src ${fontSrc()}`,
