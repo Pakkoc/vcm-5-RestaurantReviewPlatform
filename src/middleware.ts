@@ -7,7 +7,27 @@ import {
   isAuthEntryPath,
   shouldProtectPath,
 } from "@/constants/auth";
+import { createContentSecurityPolicy } from "@/constants/security";
 import { match } from "ts-pattern";
+
+const generateNonce = () => {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  let binary = "";
+  array.forEach((value) => {
+    binary += String.fromCharCode(value);
+  });
+  return btoa(binary).replace(/=+$/u, "");
+};
+
+const applySecurityHeaders = (response: NextResponse, nonce: string) => {
+  response.headers.set(
+    "Content-Security-Policy",
+    createContentSecurityPolicy(nonce),
+  );
+  response.headers.set("x-nonce", nonce);
+  return response;
+};
 
 const copyCookies = (from: NextResponse, to: NextResponse) => {
   from.cookies.getAll().forEach((cookie) => {
@@ -27,7 +47,15 @@ const copyCookies = (from: NextResponse, to: NextResponse) => {
 };
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({ request });
+  const nonce = generateNonce();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const supabase = createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -65,7 +93,7 @@ export async function middleware(request: NextRequest) {
     )
     .otherwise(() => response);
 
-  return decision;
+  return applySecurityHeaders(decision, nonce);
 }
 
 export const config = {

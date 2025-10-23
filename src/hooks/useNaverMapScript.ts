@@ -7,6 +7,7 @@ import {
   NAVER_MAP_RETRY_DELAY_MS,
   NAVER_MAP_SCRIPT_URL,
 } from "@/constants/map";
+import { useCspNonce } from "@/features/security/csp-context";
 
 type ScriptStatus = "idle" | "loading" | "ready" | "error";
 
@@ -17,6 +18,7 @@ const hasNaverMap = () => typeof window !== "undefined" && !!window.naver?.maps;
 export const useNaverMapScript = () => {
   const [status, setStatus] = useState<ScriptStatus>("idle");
   const [retryCount, setRetryCount] = useState(0);
+  const cspNonce = useCspNonce();
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -75,6 +77,9 @@ export const useNaverMapScript = () => {
 
     const script = document.createElement("script");
     script.id = NAVER_MAP_SCRIPT_ID;
+    if (cspNonce) {
+      script.setAttribute("nonce", cspNonce);
+    }
     script.src = `${NAVER_MAP_SCRIPT_URL}?ncpKeyId=${keyId}`;
     script.async = true;
 
@@ -109,7 +114,7 @@ export const useNaverMapScript = () => {
         script.parentNode.removeChild(script);
       }
     };
-  }, [retryCount]);
+  }, [retryCount, cspNonce]);
 
   const retry = useCallback(() => {
     setRetryCount(0);
