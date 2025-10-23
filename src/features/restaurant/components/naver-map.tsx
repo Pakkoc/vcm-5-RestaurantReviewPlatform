@@ -202,7 +202,7 @@ export const NaverMap = ({
 
   return (
     <div className={clsx("relative h-full min-h-[480px] w-full", className)}>
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="h-full w-full min-h-[480px]" />
       {shouldShowSpinner ? <MapLoadingSpinner /> : null}
       {isScriptError ? (
         <MapErrorFallback
