@@ -59,6 +59,7 @@ const connectSrc = () =>
     ...SUPABASE_DOMAINS,
     "wss:",
     "https:",
+    "http:",
     "http://localhost:3000",
   ]);
 
