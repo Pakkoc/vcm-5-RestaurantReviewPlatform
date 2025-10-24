@@ -47,35 +47,32 @@ export const useNaverMapScript = () => {
       return;
     }
 
-    const credentialCandidates = [
-      ...(keyId
-        ? [
-            {
-              param: "ncpKeyId" as const,
-              value: keyId,
-              description: "신규 ncpKeyId",
-            },
-          ]
-        : []),
-      ...(clientId
-        ? [
-            {
-              param: "ncpClientId" as const,
-              value: clientId,
-              description: "레거시 ncpClientId",
-            },
-          ]
-        : []),
-      ...(keyId && !clientId
-        ? [
-            {
-              param: "ncpClientId" as const,
-              value: keyId,
-              description: "ncpKeyId → ncpClientId 폴백",
-            },
-          ]
-        : []),
-    ];
+    const credentialCandidates: Array<{
+      param: "ncpKeyId" | "ncpClientId";
+      value: string;
+      description: string;
+    }> = [];
+
+    if (clientId) {
+      credentialCandidates.push({
+        param: "ncpClientId",
+        value: clientId,
+        description: "레거시 ncpClientId",
+      });
+    }
+
+    if (keyId) {
+      credentialCandidates.push({
+        param: "ncpClientId",
+        value: keyId,
+        description: "ncpKeyId → ncpClientId 폴백",
+      });
+      credentialCandidates.push({
+        param: "ncpKeyId",
+        value: keyId,
+        description: "신규 ncpKeyId",
+      });
+    }
 
     if (credentialCandidates.length === 0) {
       console.error("사용 가능한 NAVER 지도 인증 정보 후보가 없습니다.");
