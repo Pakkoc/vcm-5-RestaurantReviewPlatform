@@ -106,9 +106,9 @@ export const RestaurantSearchModal = ({
 
     return (
       <div className="space-y-3 overflow-y-auto pr-2" style={{ maxHeight: "420px" }}>
-        {results.map((result) => (
+        {results.map((result, index) => (
           <RestaurantSearchResultItem
-            key={`${result.naverPlaceId ?? result.name}`}
+            key={`${result.restaurantId ?? result.naverPlaceId ?? result.name}-${index}`}
             result={result}
             onReview={onReview}
           />
