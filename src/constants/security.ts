@@ -68,12 +68,27 @@ const fontSrc = () => serialize([SELF, DATA]);
 const frameSrc = () => serialize([NAVER_SCRIPT_ENDPOINT, ...NAVER_DOMAINS]);
 
 export const createContentSecurityPolicy = (_nonce: string) => {
+  // 개발 환경에서는 느슨한 CSP 사용
+  if (process.env.NODE_ENV === "development") {
+    return [
+      "default-src *",
+      "script-src * 'unsafe-inline' 'unsafe-eval'",
+      "style-src * 'unsafe-inline'",
+      "img-src * data: blob:",
+      "connect-src *",
+      "font-src *",
+      "frame-src *",
+    ].join("; ");
+  }
+
+  // 프로덕션 환경에서는 엄격한 CSP 사용
   const directives = [
     `default-src ${SELF}`,
     `base-uri ${SELF}`,
     "object-src 'none'",
     `form-action ${SELF}`,
     `frame-ancestors ${SELF}`,
+    "upgrade-insecure-requests",
     `script-src ${scriptSrc()}`,
     `script-src-elem ${scriptSrc()}`,
     `style-src ${styleSrc()}`,
@@ -84,11 +99,6 @@ export const createContentSecurityPolicy = (_nonce: string) => {
     `font-src ${fontSrc()}`,
     `frame-src ${frameSrc()}`,
   ];
-
-  // 프로덕션 환경에서만 upgrade-insecure-requests 적용
-  if (process.env.NODE_ENV === "production") {
-    directives.push("upgrade-insecure-requests");
-  }
 
   return directives.join("; ");
 };
