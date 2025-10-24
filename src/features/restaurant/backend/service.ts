@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AppConfig } from "@/backend/hono/context";
 import {
@@ -13,11 +14,13 @@ import {
   RestaurantSearchListSchema,
   RestaurantIdentifierRowSchema,
   CreateRestaurantResponseSchema,
+  RestaurantDetailSchema,
   type CreateRestaurantRequest,
   type CreateRestaurantResponse,
   type RestaurantMarker,
   type RestaurantSearchNaverItem,
   type RestaurantSearchResult,
+  type RestaurantDetail,
 } from "@/features/restaurant/backend/schema";
 import {
   restaurantErrorCodes,
@@ -38,6 +41,23 @@ const RESTAURANT_TABLE = "restaurants";
 const RESTAURANT_AGGREGATE_VIEW = "restaurant_review_aggregates";
 const RESTAURANT_SELECT_COLUMNS =
   "id, name, address, category, latitude, longitude, naver_place_id";
+
+const RestaurantAggregateFieldsSchema = z.object({
+  review_count: z.coerce
+    .number()
+    .nonnegative()
+    .refine(Number.isFinite, "review_count must be a finite number"),
+  average_rating: z
+    .union([z.coerce.number(), z.null()])
+    .refine(
+      (value) => value === null || (value >= 0 && value <= 5),
+      "average_rating must be between 0 and 5 when provided",
+    ),
+});
+
+const RestaurantDetailRowSchema = RestaurantRecordSchema.extend({
+  aggregates: RestaurantAggregateFieldsSchema.nullable(),
+});
 
 type SanitizedRestaurantPayload = {
   name: string;
@@ -257,6 +277,90 @@ export const createRestaurant = async (
   }
 
   return mapRecordToResponse(inserted, true);
+};
+
+export const getRestaurantDetail = async (
+  client: SupabaseClient,
+  id: string,
+): Promise<HandlerResult<RestaurantDetail, RestaurantServiceError, unknown>> => {
+  const { data: row, error } = await client
+    .from(RESTAURANT_TABLE)
+    .select(
+      `
+        id,
+        name,
+        address,
+        category,
+        latitude,
+        longitude,
+        naver_place_id,
+        aggregates:restaurant_review_aggregates(review_count, average_rating)
+      `,
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    return failure(
+      500,
+      restaurantErrorCodes.detailFetchFailed,
+      error.message,
+    );
+  }
+
+  if (!row) {
+    return failure(
+      404,
+      restaurantErrorCodes.detailNotFound,
+      "음식점을 찾을 수 없습니다.",
+    );
+  }
+
+  const parsedRow = RestaurantDetailRowSchema.safeParse(row);
+
+  if (!parsedRow.success) {
+    return failure(
+      500,
+      restaurantErrorCodes.detailValidationFailed,
+      "음식점 상세 데이터를 검증하지 못했습니다.",
+      parsedRow.error.format(),
+    );
+  }
+
+  const { aggregates, ...restaurant } = parsedRow.data;
+
+  const reviewCount = aggregates?.review_count
+    ? Math.trunc(aggregates.review_count)
+    : 0;
+
+  const averageRating =
+    !aggregates || reviewCount === 0 || aggregates.average_rating === null
+      ? null
+      : Number.parseFloat(aggregates.average_rating.toFixed(1));
+
+  const candidate: RestaurantDetail = {
+    id: restaurant.id,
+    name: restaurant.name,
+    address: restaurant.address,
+    category: restaurant.category,
+    latitude: Number(restaurant.latitude),
+    longitude: Number(restaurant.longitude),
+    reviewCount,
+    averageRating,
+  };
+
+  const validation = RestaurantDetailSchema.safeParse(candidate);
+
+  if (!validation.success) {
+    return failure(
+      500,
+      restaurantErrorCodes.detailValidationFailed,
+      "음식점 상세 응답 데이터를 검증하지 못했습니다.",
+      validation.error.format(),
+    );
+  }
+
+  return success(validation.data);
 };
 
 export const getRestaurantMarkers = async (

@@ -1,6 +1,10 @@
 export const restaurantErrorCodes = {
   markersFetchFailed: "RESTAURANT_MARKERS_FETCH_FAILED",
   markersValidationFailed: "RESTAURANT_MARKERS_VALIDATION_FAILED",
+  detailFetchFailed: "RESTAURANT_DETAIL_FETCH_FAILED",
+  detailNotFound: "RESTAURANT_DETAIL_NOT_FOUND",
+  detailValidationFailed: "RESTAURANT_DETAIL_VALIDATION_FAILED",
+  detailRequestInvalid: "RESTAURANT_DETAIL_REQUEST_INVALID",
   searchRequestInvalid: "RESTAURANT_SEARCH_REQUEST_INVALID",
   searchUpstreamFailed: "RESTAURANT_SEARCH_UPSTREAM_FAILED",
   searchTimeout: "RESTAURANT_SEARCH_TIMEOUT",

@@ -5,6 +5,9 @@ import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NaverMap } from "@/features/restaurant/components/naver-map";
 import {
+  MarkerTooltip,
+} from "@/features/restaurant/components/marker-tooltip";
+import {
   RestaurantSearchModal,
 } from "@/features/restaurant/components/restaurant-search-modal";
 import {
@@ -13,6 +16,7 @@ import {
   type RestaurantSearchResult,
 } from "@/features/restaurant/lib/dto";
 import { useRestaurantSearch } from "@/features/restaurant/hooks/useRestaurantSearch";
+import { useRestaurantDetail } from "@/features/restaurant/hooks/useRestaurantDetail";
 import { useToast } from "@/hooks/use-toast";
 import { sanitizeSearchKeyword } from "@/lib/string-utils";
 
@@ -30,9 +34,6 @@ export default function HomePage({ params }: HomePageProps) {
   const initialKeyword = searchParams.get(SEARCH_PARAM_KEY) ?? "";
 
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [hoveredMarker, setHoveredMarker] = useState<RestaurantMarker | null>(
-    null,
-  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalState, setModalState] = useState<
     "idle" | "loading" | "success" | "error"
@@ -42,6 +43,13 @@ export default function HomePage({ params }: HomePageProps) {
   );
   const [modalError, setModalError] = useState<string | null>(null);
   const [activeKeyword, setActiveKeyword] = useState(initialKeyword);
+  const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
+  const [hoveredMarkerFallback, setHoveredMarkerFallback] =
+    useState<RestaurantMarker | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   const { toast } = useToast();
   const {
@@ -153,12 +161,22 @@ export default function HomePage({ params }: HomePageProps) {
     [router],
   );
 
-  const handleMarkerHover = useCallback((marker: RestaurantMarker) => {
-    setHoveredMarker(marker);
-  }, []);
+  const handleMarkerHover = useCallback(
+    (
+      marker: RestaurantMarker,
+      event: { position: { x: number; y: number } },
+    ) => {
+      setHoveredMarkerId(marker.id);
+      setHoveredMarkerFallback(marker);
+      setTooltipPosition(event.position);
+    },
+    [],
+  );
 
   const handleMarkerLeave = useCallback(() => {
-    setHoveredMarker(null);
+    setHoveredMarkerId(null);
+    setHoveredMarkerFallback(null);
+    setTooltipPosition(null);
   }, []);
 
   useEffect(() => {
@@ -181,6 +199,35 @@ export default function HomePage({ params }: HomePageProps) {
     setActiveKeyword(initialKeyword);
     void executeSearchFlow(initialKeyword, { updateQuery: false });
   }, [executeSearchFlow, initialKeyword]);
+
+  const {
+    data: hoveredRestaurant,
+    isFetching: isRestaurantDetailFetching,
+  } = useRestaurantDetail(hoveredMarkerId ?? "", {
+    enabled: hoveredMarkerId !== null,
+  });
+
+  const tooltipData = (() => {
+    if (hoveredRestaurant) {
+      return {
+        name: hoveredRestaurant.name,
+        category: hoveredRestaurant.category,
+        reviewCount: hoveredRestaurant.reviewCount,
+        averageRating: hoveredRestaurant.averageRating,
+      };
+    }
+
+    if (hoveredMarkerFallback) {
+      return {
+        name: hoveredMarkerFallback.name,
+        category: hoveredMarkerFallback.category,
+        reviewCount: hoveredMarkerFallback.reviewCount,
+        averageRating: hoveredMarkerFallback.averageRating,
+      };
+    }
+
+    return null;
+  })();
 
   return (
     <main className="flex min-h-screen flex-col bg-white">
@@ -214,36 +261,18 @@ export default function HomePage({ params }: HomePageProps) {
         </form>
       </header>
       <section className="relative flex-1 min-h-[480px]">
-        {hoveredMarker ? (
-          <aside className="pointer-events-none absolute left-6 top-6 z-20 max-w-xs rounded-xl border border-slate-200 bg-white/90 p-4 text-left shadow-lg">
-            <h2 className="text-base font-semibold text-slate-900">
-              {hoveredMarker.name}
-            </h2>
-            <dl className="mt-2 space-y-1 text-sm text-slate-600">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="font-medium text-slate-500">카테고리</dt>
-                <dd>{hoveredMarker.category ?? "정보 없음"}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="font-medium text-slate-500">평점</dt>
-                <dd>
-                  {hoveredMarker.averageRating !== null
-                    ? `⭐ ${hoveredMarker.averageRating.toFixed(1)}`
-                    : "아직 평점 없음"}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="font-medium text-slate-500">리뷰 수</dt>
-                <dd>{hoveredMarker.reviewCount}개</dd>
-              </div>
-            </dl>
-          </aside>
-        ) : null}
         <NaverMap
           onMarkerClick={handleMarkerClick}
           onMarkerHover={handleMarkerHover}
           onMarkerLeave={handleMarkerLeave}
         />
+        {tooltipData && tooltipPosition ? (
+          <MarkerTooltip
+            data={tooltipData}
+            position={tooltipPosition}
+            isLoading={isRestaurantDetailFetching}
+          />
+        ) : null}
       </section>
       <RestaurantSearchModal
         isOpen={isModalOpen}

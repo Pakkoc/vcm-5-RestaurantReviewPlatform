@@ -98,7 +98,6 @@ export const createNaverSearchClient = (
         }
 
         // Minimal diagnostics without leaking credentials
-        // eslint-disable-next-line no-console
         console.error(
           "[NaverSearch] upstream not ok",
           response.status,

@@ -17,8 +17,11 @@ import { useNaverMapScript } from "@/hooks/useNaverMapScript";
 type NaverMapProps = {
   className?: string;
   onMarkerClick?: (marker: RestaurantMarker) => void;
-  onMarkerHover?: (marker: RestaurantMarker) => void;
-  onMarkerLeave?: (marker: RestaurantMarker) => void;
+  onMarkerHover?: (
+    marker: RestaurantMarker,
+    event: { position: { x: number; y: number } },
+  ) => void;
+  onMarkerLeave?: () => void;
 };
 
 type MarkerEntry = {
@@ -60,11 +63,11 @@ export const NaverMap = ({
 
     const container = containerRef.current;
     let targetElement = container.parentElement;
-    
+
     while (targetElement && targetElement.offsetHeight === 0) {
       targetElement = targetElement.parentElement;
     }
-    
+
     if (targetElement && targetElement.offsetHeight > 0) {
       const height = targetElement.offsetHeight;
       container.style.height = `${height}px`;
@@ -95,12 +98,31 @@ export const NaverMap = ({
       NAVER_MAP_DEFAULT_CENTER.longitude,
     );
 
+    const { naver } = window;
+    const zoomControlPosition =
+      naver?.maps?.Position?.TOP_RIGHT ?? undefined;
+
     mapInstanceRef.current = new window.naver.maps.Map(containerRef.current, {
       center,
       zoom: NAVER_MAP_DEFAULT_ZOOM,
       minZoom: NAVER_MAP_MIN_ZOOM,
       maxZoom: NAVER_MAP_MAX_ZOOM,
       zoomControl: true,
+      zoomControlOptions: zoomControlPosition
+        ? {
+            position: zoomControlPosition,
+          }
+        : undefined,
+      mapDataControl: false,
+      scaleControl: false,
+      logoControl: false,
+      draggable: true,
+      scrollWheel: true,
+      keyboardShortcuts: true,
+      disableDoubleTapZoom: false,
+      disableDoubleClickZoom: false,
+      disableTwoFingerTapZoom: false,
+      pinchZoom: true,
     });
   }, [isScriptReady]);
 
@@ -157,6 +179,53 @@ export const NaverMap = ({
         ReturnType<typeof naver.maps.Event.addListener>
       > = [];
 
+      const computeScreenPosition = (
+        event: naver.maps.PointerEvent,
+      ): { x: number; y: number } => {
+        const pointerEvent = event.pointerEvent;
+
+        if (pointerEvent) {
+          const mouseLike = pointerEvent as Partial<MouseEvent>;
+
+          if (
+            typeof mouseLike.clientX === "number" &&
+            typeof mouseLike.clientY === "number"
+          ) {
+            return {
+              x: mouseLike.clientX,
+              y: mouseLike.clientY,
+            };
+          }
+
+          const touchLike = pointerEvent as Partial<TouchEvent>;
+
+          if (
+            touchLike.changedTouches &&
+            touchLike.changedTouches.length > 0
+          ) {
+            const touch = touchLike.changedTouches[0];
+            return {
+              x: touch.clientX,
+              y: touch.clientY,
+            };
+          }
+        }
+
+        const containerRect = containerRef.current?.getBoundingClientRect();
+
+        if (containerRect) {
+          return {
+            x: containerRect.left + event.point.x,
+            y: containerRect.top + event.point.y,
+          };
+        }
+
+        return {
+          x: event.point.x,
+          y: event.point.y,
+        };
+      };
+
       if (onMarkerClick) {
         listeners.push(
           naver.maps.Event.addListener(marker, "click", () =>
@@ -167,8 +236,13 @@ export const NaverMap = ({
 
       if (onMarkerHover) {
         listeners.push(
-          naver.maps.Event.addListener(marker, "mouseover", () =>
-            onMarkerHover(markerData),
+          naver.maps.Event.addListener(
+            marker,
+            "mouseover",
+            (event: naver.maps.PointerEvent) =>
+              onMarkerHover(markerData, {
+                position: computeScreenPosition(event),
+              }),
           ),
         );
       }
@@ -176,7 +250,7 @@ export const NaverMap = ({
       if (onMarkerLeave) {
         listeners.push(
           naver.maps.Event.addListener(marker, "mouseout", () =>
-            onMarkerLeave(markerData),
+            onMarkerLeave(),
           ),
         );
       }

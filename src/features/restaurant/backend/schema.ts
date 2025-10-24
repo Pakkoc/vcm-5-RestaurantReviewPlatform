@@ -57,6 +57,19 @@ export type RestaurantMarker = z.infer<typeof RestaurantMarkerSchema>;
 
 export const RestaurantMarkerListSchema = z.array(RestaurantMarkerSchema);
 
+export const RestaurantDetailSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  address: z.string(),
+  category: z.string().nullable(),
+  latitude: z.number(),
+  longitude: z.number(),
+  reviewCount: z.number().int().nonnegative(),
+  averageRating: z.number().min(0).max(5).nullable(),
+});
+
+export type RestaurantDetail = z.infer<typeof RestaurantDetailSchema>;
+
 export const RestaurantSearchRequestSchema = z.object({
   keyword: z
     .string()

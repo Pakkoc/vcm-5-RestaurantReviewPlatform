@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Hono } from "hono";
 import { respond, failure, type ErrorResult } from "@/backend/http/response";
 import {
@@ -9,6 +10,7 @@ import {
 import {
   createRestaurant,
   getRestaurantMarkers,
+  getRestaurantDetail,
   searchRestaurants,
 } from "@/features/restaurant/backend/service";
 import {
@@ -68,6 +70,46 @@ export const registerRestaurantRoutes = (app: Hono<AppEnv>) => {
         errorResult.error.message,
         errorResult.error.details ?? null,
       );
+    }
+
+    return respond(c, result);
+  });
+
+  app.get("/api/restaurants/:restaurantId", async (c) => {
+    const logger = getLogger(c);
+    const supabase = getSupabase(c);
+    const restaurantId = c.req.param("restaurantId");
+
+    const parsedId = z.string().uuid().safeParse(restaurantId);
+
+    if (!parsedId.success) {
+      return respond(
+        c,
+        failure(
+          400,
+          restaurantErrorCodes.detailRequestInvalid,
+          "유효한 음식점 ID가 필요합니다.",
+        ),
+      );
+    }
+
+    const result = await getRestaurantDetail(supabase, parsedId.data);
+
+    if (!result.ok) {
+      const errorResult = result as ErrorResult<
+        RestaurantServiceError,
+        unknown
+      >;
+      const { code, message } = errorResult.error;
+
+      if (
+        code === restaurantErrorCodes.detailFetchFailed ||
+        code === restaurantErrorCodes.detailValidationFailed
+      ) {
+        logger.error("Failed to load restaurant detail", message);
+      } else if (code === restaurantErrorCodes.detailNotFound) {
+        logger.warn("Restaurant not found", { restaurantId: parsedId.data });
+      }
     }
 
     return respond(c, result);

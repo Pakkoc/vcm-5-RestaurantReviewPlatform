@@ -4,6 +4,7 @@ import { withAppContext } from "@/backend/middleware/context";
 import { withSupabase } from "@/backend/middleware/supabase";
 import { registerExampleRoutes } from "@/features/example/backend/route";
 import { registerRestaurantRoutes } from "@/features/restaurant/backend/route";
+import { registerReviewRoutes } from "@/features/review/backend/route";
 import type { AppEnv } from "@/backend/hono/context";
 
 let singletonApp: Hono<AppEnv> | null = null;
@@ -21,6 +22,7 @@ export const createHonoApp = () => {
 
   registerExampleRoutes(app);
   registerRestaurantRoutes(app);
+  registerReviewRoutes(app);
 
   app.notFound((c) => {
     return c.json(

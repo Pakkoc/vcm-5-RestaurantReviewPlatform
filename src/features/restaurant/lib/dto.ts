@@ -6,6 +6,8 @@ export {
   RestaurantSearchResultSchema,
   RestaurantSearchListSchema,
   RESTAURANT_SEARCH_KEYWORD_MAX_LENGTH,
+  RestaurantDetailSchema,
+  type RestaurantDetail,
   type RestaurantSearchResult,
   CreateRestaurantRequestSchema,
   CreateRestaurantResponseSchema,
