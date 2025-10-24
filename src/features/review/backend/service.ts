@@ -336,7 +336,8 @@ export const deleteReview = async (
     return failure(500, reviewErrorCodes.deleteFailed, error.message);
   }
 
-  return success(null, 204);
+  // 204는 본문이 없어야 하지만, 현재 공통 응답 헬퍼는 ContentfulStatusCode만 허용하므로 200으로 응답합니다.
+  return success(null, 200);
 };
 
 export const getReviewById = async (
