@@ -55,9 +55,8 @@ const RestaurantAggregateFieldsSchema = z.object({
     ),
 });
 
-const RestaurantDetailRowSchema = RestaurantRecordSchema.extend({
-  aggregates: RestaurantAggregateFieldsSchema.nullable(),
-});
+// 상세 조회는 Supabase가 view 관계를 추론하지 못하는 환경을 고려하여
+// restaurants 단건 + aggregates 뷰 단건을 별도 조회 후 병합한다.
 
 type SanitizedRestaurantPayload = {
   name: string;
@@ -283,32 +282,23 @@ export const getRestaurantDetail = async (
   client: SupabaseClient,
   id: string,
 ): Promise<HandlerResult<RestaurantDetail, RestaurantServiceError, unknown>> => {
-  const { data: row, error } = await client
+  const { data: restaurantRow, error: restaurantError } = await client
     .from(RESTAURANT_TABLE)
     .select(
-      `
-        id,
-        name,
-        address,
-        category,
-        latitude,
-        longitude,
-        naver_place_id,
-        aggregates:restaurant_review_aggregates(review_count, average_rating)
-      `,
+      `id, name, address, category, latitude, longitude, naver_place_id`,
     )
     .eq("id", id)
     .maybeSingle();
 
-  if (error) {
+  if (restaurantError) {
     return failure(
       500,
       restaurantErrorCodes.detailFetchFailed,
-      error.message,
+      restaurantError.message,
     );
   }
 
-  if (!row) {
+  if (!restaurantRow) {
     return failure(
       404,
       restaurantErrorCodes.detailNotFound,
@@ -316,35 +306,60 @@ export const getRestaurantDetail = async (
     );
   }
 
-  const parsedRow = RestaurantDetailRowSchema.safeParse(row);
+  const parsedRestaurant = RestaurantRecordSchema.safeParse(restaurantRow);
 
-  if (!parsedRow.success) {
+  if (!parsedRestaurant.success) {
     return failure(
       500,
       restaurantErrorCodes.detailValidationFailed,
       "음식점 상세 데이터를 검증하지 못했습니다.",
-      parsedRow.error.format(),
+      parsedRestaurant.error.format(),
     );
   }
 
-  const { aggregates, ...restaurant } = parsedRow.data;
+  const { data: aggregateRow, error: aggregateError } = await client
+    .from(RESTAURANT_AGGREGATE_VIEW)
+    .select("review_count, average_rating")
+    .eq("restaurant_id", id)
+    .maybeSingle();
 
-  const reviewCount = aggregates?.review_count
-    ? Math.trunc(aggregates.review_count)
+  if (aggregateError) {
+    return failure(
+      500,
+      restaurantErrorCodes.detailFetchFailed,
+      aggregateError.message,
+    );
+  }
+
+  const parsedAggregate = RestaurantAggregateFieldsSchema.nullable().safeParse(
+    aggregateRow ?? null,
+  );
+
+  if (!parsedAggregate.success) {
+    return failure(
+      500,
+      restaurantErrorCodes.detailValidationFailed,
+      "음식점 상세 통계 데이터를 검증하지 못했습니다.",
+      parsedAggregate.error.format(),
+    );
+  }
+
+  const reviewCount = parsedAggregate.data?.review_count
+    ? Math.trunc(parsedAggregate.data.review_count)
     : 0;
 
   const averageRating =
-    !aggregates || reviewCount === 0 || aggregates.average_rating === null
+    !parsedAggregate.data || reviewCount === 0 || parsedAggregate.data.average_rating === null
       ? null
-      : Number.parseFloat(aggregates.average_rating.toFixed(1));
+      : Number.parseFloat(parsedAggregate.data.average_rating.toFixed(1));
 
   const candidate: RestaurantDetail = {
-    id: restaurant.id,
-    name: restaurant.name,
-    address: restaurant.address,
-    category: restaurant.category,
-    latitude: Number(restaurant.latitude),
-    longitude: Number(restaurant.longitude),
+    id: parsedRestaurant.data.id,
+    name: parsedRestaurant.data.name,
+    address: parsedRestaurant.data.address,
+    category: parsedRestaurant.data.category,
+    latitude: Number(parsedRestaurant.data.latitude),
+    longitude: Number(parsedRestaurant.data.longitude),
     reviewCount,
     averageRating,
   };

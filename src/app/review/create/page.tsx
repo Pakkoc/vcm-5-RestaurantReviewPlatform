@@ -55,7 +55,9 @@ export default function ReviewCreatePage({
   const createReviewMutation = useCreateReview(restaurantId, {
     onSuccess: (response) => {
       setShowConfirmDialog(false);
-      router.push(`/restaurant/${response.restaurantId}`);
+      // 리뷰 작성 페이지를 히스토리에서 대체하여,
+      // 상세 페이지에서 뒤로가기 시 홈으로 이동되도록 처리
+      router.replace(`/restaurant/${response.restaurantId}`);
     },
   });
 

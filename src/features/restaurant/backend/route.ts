@@ -23,6 +23,34 @@ import {
 } from "@/features/restaurant/backend/schema";
 
 export const registerRestaurantRoutes = (app: Hono<AppEnv>) => {
+  // 정적 경로는 파라미터 경로보다 먼저 등록해야 함
+  app.get("/api/restaurants/markers", async (c) => {
+    const supabase = getSupabase(c);
+    const logger = getLogger(c);
+
+    const result = await getRestaurantMarkers(supabase);
+
+    if (!result.ok) {
+      const errorResult = result as ErrorResult<
+        RestaurantServiceError,
+        unknown
+      >;
+      const { code, message } = errorResult.error;
+
+      if (
+        code === restaurantErrorCodes.markersFetchFailed ||
+        code === restaurantErrorCodes.markersValidationFailed
+      ) {
+        logger.error(
+          "Failed to load restaurant markers",
+          message,
+        );
+      }
+    }
+
+    return respond(c, result);
+  });
+
   app.post("/api/restaurants", async (c) => {
     const logger = getLogger(c);
     const supabase = getSupabase(c);
@@ -185,30 +213,4 @@ export const registerRestaurantRoutes = (app: Hono<AppEnv>) => {
     return respond(c, result);
   });
 
-  app.get("/api/restaurants/markers", async (c) => {
-    const supabase = getSupabase(c);
-    const logger = getLogger(c);
-
-    const result = await getRestaurantMarkers(supabase);
-
-    if (!result.ok) {
-      const errorResult = result as ErrorResult<
-        RestaurantServiceError,
-        unknown
-      >;
-      const { code, message } = errorResult.error;
-
-      if (
-        code === restaurantErrorCodes.markersFetchFailed ||
-        code === restaurantErrorCodes.markersValidationFailed
-      ) {
-        logger.error(
-          "Failed to load restaurant markers",
-          message,
-        );
-      }
-    }
-
-    return respond(c, result);
-  });
 };
