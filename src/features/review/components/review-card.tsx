@@ -27,6 +27,13 @@ export const ReviewCard = ({
   showActions,
 }: ReviewCardProps) => {
   const formattedDate = getFormattedDate(review.createdAt);
+  const isEdited = (() => {
+    try {
+      return new Date(review.updatedAt).getTime() - new Date(review.createdAt).getTime() > 1000;
+    } catch {
+      return false;
+    }
+  })();
 
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -36,7 +43,14 @@ export const ReviewCard = ({
             {review.authorName}
           </p>
           {formattedDate ? (
-            <p className="text-sm text-slate-500">{formattedDate}</p>
+            <p className="text-sm text-slate-500">
+              {formattedDate}
+              {isEdited ? (
+                <span className="ml-2 inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  수정됨
+                </span>
+              ) : null}
+            </p>
           ) : null}
         </div>
         <div className="flex items-center gap-1">

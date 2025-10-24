@@ -17,16 +17,18 @@ import {
   ReviewListSchema,
   ReviewSchema,
   VerifyReviewPasswordResponseSchema,
+  UpdateReviewRequestSchema,
   type CreateReviewRequest,
   type CreateReviewResponse,
   type Review,
   type VerifyReviewPasswordResponse,
+  type UpdateReviewRequest,
 } from "@/features/review/backend/schema";
 import { normalizeWhitespace } from "@/lib/string-utils";
 
 const REVIEWS_TABLE = "reviews";
 const REVIEW_SELECT_COLUMNS =
-  "id, restaurant_id, author_name, rating, content, created_at";
+  "id, restaurant_id, author_name, rating, content, created_at, updated_at";
 const REVIEW_PASSWORD_SELECT_COLUMNS =
   "id, restaurant_id, password_hash";
 const PASSWORD_SALT_ROUNDS = 10;
@@ -38,6 +40,7 @@ const ReviewRowSchema = z.object({
   rating: z.coerce.number(),
   content: z.string(),
   created_at: z.string(),
+  updated_at: z.string(),
 });
 
 const ReviewPasswordRowSchema = z.object({
@@ -92,6 +95,7 @@ const mapRowToReview = (row: z.infer<typeof ReviewRowSchema>): Review => ({
   rating: Number(row.rating),
   content: row.content,
   createdAt: row.created_at,
+  updatedAt: row.updated_at,
 });
 
 export const createReview = async (
@@ -315,6 +319,130 @@ export const verifyReviewPassword = async (
       500,
       reviewErrorCodes.validationFailed,
       "비밀번호 검증 응답 데이터를 검증하지 못했습니다.",
+      validation.error.format(),
+    );
+  }
+
+  return success(validation.data);
+};
+
+export const deleteReview = async (
+  client: SupabaseClient,
+  reviewId: string,
+): Promise<HandlerResult<null, ReviewServiceError, unknown>> => {
+  const { error } = await client.from(REVIEWS_TABLE).delete().eq("id", reviewId);
+
+  if (error) {
+    return failure(500, reviewErrorCodes.deleteFailed, error.message);
+  }
+
+  return success(null, 204);
+};
+
+export const getReviewById = async (
+  client: SupabaseClient,
+  reviewId: string,
+): Promise<HandlerResult<Review, ReviewServiceError, unknown>> => {
+  const { data, error } = await client
+    .from(REVIEWS_TABLE)
+    .select(REVIEW_SELECT_COLUMNS)
+    .eq("id", reviewId)
+    .maybeSingle();
+
+  if (error) {
+    return failure(500, reviewErrorCodes.fetchFailed, error.message);
+  }
+
+  if (!data) {
+    return failure(404, reviewErrorCodes.notFound, "리뷰를 찾을 수 없습니다.");
+  }
+
+  const parsed = ReviewRowSchema.safeParse(data);
+  if (!parsed.success) {
+    return failure(
+      500,
+      reviewErrorCodes.validationFailed,
+      "리뷰 데이터를 검증하지 못했습니다.",
+      parsed.error.format(),
+    );
+  }
+
+  const review = mapRowToReview(parsed.data);
+  const validation = ReviewSchema.safeParse(review);
+  if (!validation.success) {
+    return failure(
+      500,
+      reviewErrorCodes.validationFailed,
+      "리뷰 응답 데이터를 검증하지 못했습니다.",
+      validation.error.format(),
+    );
+  }
+
+  return success(validation.data);
+};
+
+export const updateReview = async (
+  client: SupabaseClient,
+  reviewId: string,
+  payload: UpdateReviewRequest,
+): Promise<HandlerResult<Review, ReviewServiceError, unknown>> => {
+  // 입력 검증
+  const parsedPayload = UpdateReviewRequestSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return failure(
+      400,
+      reviewErrorCodes.validationFailed,
+      "리뷰 입력값을 확인해 주세요.",
+      parsedPayload.error.format(),
+    );
+  }
+
+  // 비밀번호 검증
+  const verify = await verifyReviewPassword(
+    client,
+    reviewId,
+    parsedPayload.data.password,
+  );
+  if (!verify.ok) {
+    return verify as HandlerResult<Review, ReviewServiceError, unknown>;
+  }
+
+  const { data, error } = await client
+    .from(REVIEWS_TABLE)
+    .update({
+      author_name: parsedPayload.data.author_name.trim(),
+      rating: Math.trunc(parsedPayload.data.rating),
+      content: parsedPayload.data.content.trim(),
+    })
+    .eq("id", reviewId)
+    .select(REVIEW_SELECT_COLUMNS)
+    .maybeSingle();
+
+  if (error) {
+    return failure(500, reviewErrorCodes.fetchFailed, error.message);
+  }
+
+  if (!data) {
+    return failure(404, reviewErrorCodes.notFound, "리뷰를 찾을 수 없습니다.");
+  }
+
+  const parsed = ReviewRowSchema.safeParse(data);
+  if (!parsed.success) {
+    return failure(
+      500,
+      reviewErrorCodes.validationFailed,
+      "리뷰 데이터를 검증하지 못했습니다.",
+      parsed.error.format(),
+    );
+  }
+
+  const review = mapRowToReview(parsed.data);
+  const validation = ReviewSchema.safeParse(review);
+  if (!validation.success) {
+    return failure(
+      500,
+      reviewErrorCodes.validationFailed,
+      "리뷰 응답 데이터를 검증하지 못했습니다.",
       validation.error.format(),
     );
   }

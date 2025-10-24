@@ -16,6 +16,9 @@ import {
   createReview,
   getReviews,
   verifyReviewPassword,
+  deleteReview,
+  getReviewById,
+  updateReview,
 } from "@/features/review/backend/service";
 import {
   reviewErrorCodes,
@@ -331,6 +334,74 @@ export const registerReviewRoutes = (app: Hono<AppEnv>) => {
     }
 
     verificationAttemptStore.delete(attemptKey);
+    return respond(c, result);
+  });
+
+  app.delete("/api/reviews/:reviewId", async (c) => {
+    const logger = getLogger(c);
+    const supabase = getSupabase(c);
+    const reviewIdParam = c.req.param("reviewId");
+
+    const reviewId = z.string().uuid().safeParse(reviewIdParam);
+
+    if (!reviewId.success) {
+      return respond(
+        c,
+        failure(400, reviewErrorCodes.validationFailed, "유효한 리뷰 ID가 필요합니다."),
+      );
+    }
+
+    const result = await deleteReview(supabase, reviewId.data);
+
+    if (!result.ok) {
+      const errorResult = result as ErrorResult<ReviewServiceError, unknown>;
+      logger.error("Failed to delete review", errorResult.error.message);
+    }
+
+    return respond(c, result);
+  });
+
+  app.get("/api/reviews/:reviewId", async (c) => {
+    const supabase = getSupabase(c);
+    const reviewIdParam = c.req.param("reviewId");
+
+    const reviewId = z.string().uuid().safeParse(reviewIdParam);
+    if (!reviewId.success) {
+      return respond(
+        c,
+        failure(400, reviewErrorCodes.validationFailed, "유효한 리뷰 ID가 필요합니다."),
+      );
+    }
+
+    const result = await getReviewById(supabase, reviewId.data);
+    return respond(c, result);
+  });
+
+  app.patch("/api/reviews/:reviewId", async (c) => {
+    const logger = getLogger(c);
+    const supabase = getSupabase(c);
+    const reviewIdParam = c.req.param("reviewId");
+
+    const reviewId = z.string().uuid().safeParse(reviewIdParam);
+    if (!reviewId.success) {
+      return respond(
+        c,
+        failure(400, reviewErrorCodes.validationFailed, "유효한 리뷰 ID가 필요합니다."),
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = await c.req.json();
+    } catch (error) {
+      logger.warn("Failed to parse update review payload", error);
+      return respond(
+        c,
+        failure(400, reviewErrorCodes.validationFailed, "요청 본문을 읽는 중 문제가 발생했습니다."),
+      );
+    }
+
+    const result = await updateReview(supabase, reviewId.data, payload as any);
     return respond(c, result);
   });
 };

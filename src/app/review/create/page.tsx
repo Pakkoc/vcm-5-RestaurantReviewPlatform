@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReviewForm } from "@/features/review/components/review-form";
 import { useCreateReview } from "@/features/review/hooks/useCreateReview";
+import { useUpdateReview } from "@/features/review/hooks/useUpdateReview";
+import { useReview } from "@/features/review/hooks/useReviews";
 import { useReviewForm } from "@/features/review/hooks/useReviewForm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRestaurantDetail } from "@/features/restaurant/hooks/useRestaurantDetail";
@@ -31,6 +33,7 @@ export default function ReviewCreatePage({
   const router = useRouter();
   const query = useSearchParams();
   const restaurantId = query.get("restaurantId") ?? "";
+  const reviewId = query.get("reviewId");
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -47,6 +50,8 @@ export default function ReviewCreatePage({
     },
   );
 
+  const reviewQuery = useReview(reviewId ?? "", { enabled: Boolean(reviewId) });
+
   const {
     form,
     hasDirtyValue,
@@ -61,7 +66,20 @@ export default function ReviewCreatePage({
     },
   });
 
+  const updateReviewMutation = useUpdateReview(reviewId ?? "", restaurantId);
+
   const handleSubmit = async (data: ReviewFormData) => {
+    if (reviewId) {
+      await updateReviewMutation.mutateAsync({
+        author_name: data.authorName.trim(),
+        rating: data.rating,
+        content: data.content.trim(),
+        password: data.password,
+      });
+      router.replace(`/restaurant/${restaurantId}`);
+      return;
+    }
+
     await createReviewMutation.mutateAsync({
       author_name: data.authorName.trim(),
       rating: data.rating,
@@ -95,6 +113,18 @@ export default function ReviewCreatePage({
     return restaurant.id.slice(0, 12);
   }, [restaurant]);
 
+  // 프리필: reviewId 있을 때 폼 값 채우기 (마운트 후 1회)
+  useEffect(() => {
+    if (reviewId && reviewQuery.data) {
+      form.setValue("authorName", reviewQuery.data.authorName, {
+        shouldDirty: false,
+      });
+      form.setValue("rating", reviewQuery.data.rating, { shouldDirty: false });
+      form.setValue("content", reviewQuery.data.content, { shouldDirty: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewId, reviewQuery.data]);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <header className="flex items-center justify-between">
@@ -120,6 +150,9 @@ export default function ReviewCreatePage({
               : restaurant
               ? restaurant.name
               : "음식점 정보를 확인할 수 없습니다."}
+            {reviewId ? (
+              <span className="ml-2 text-xs font-medium text-slate-500">(수정)</span>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -181,7 +214,11 @@ export default function ReviewCreatePage({
             <ReviewForm
               form={form}
               onSubmit={handleSubmit}
-              isSubmitting={createReviewMutation.isPending}
+              isSubmitting={
+                reviewId
+                  ? updateReviewMutation.isPending
+                  : createReviewMutation.isPending
+              }
             />
           </section>
         </CardContent>

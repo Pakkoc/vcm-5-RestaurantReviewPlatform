@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReviewList } from "@/features/review/components/review-list";
 import { PasswordDialog } from "@/features/review/components/password-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useVerifyReviewPassword } from "@/features/review/hooks/useVerifyReviewPassword";
 import { useRestaurantDetail } from "@/features/restaurant/hooks/useRestaurantDetail";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +61,10 @@ export default function RestaurantDetailPage({
     dialogState.open ? dialogState.review.id : "",
   );
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [pendingDeleteReviewId, setPendingDeleteReviewId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     if (dialogState.open === false && verifyPasswordMutation.isError) {
       verifyPasswordMutation.reset();
@@ -88,15 +93,21 @@ export default function RestaurantDetailPage({
     try {
       await verifyPasswordMutation.mutateAsync({ password });
 
-      toast({
-        title: "비밀번호 확인 완료",
-        description:
-          dialogState.action === "edit"
-            ? "수정 기능은 추후 제공될 예정입니다."
-            : "삭제 기능은 추후 제공될 예정입니다.",
-      });
-
-      setDialogState(INITIAL_DIALOG_STATE);
+      if (dialogState.action === "delete") {
+        setDialogState(INITIAL_DIALOG_STATE);
+        setPendingDeleteReviewId(dialogState.review.id);
+        setConfirmDeleteOpen(true);
+      } else if (dialogState.action === "edit") {
+        const target = dialogState.review;
+        setDialogState(INITIAL_DIALOG_STATE);
+        router.push(`/review/create?restaurantId=${restaurantId}&reviewId=${target.id}`);
+      } else {
+        toast({
+          title: "비밀번호 확인 완료",
+          description: "수정 기능은 추후 제공될 예정입니다.",
+        });
+        setDialogState(INITIAL_DIALOG_STATE);
+      }
     } catch (err) {
       const attemptsLeft =
         typeof (err as { attemptsLeft?: number }).attemptsLeft === "number"
@@ -115,6 +126,42 @@ export default function RestaurantDetailPage({
             }
           : prev,
       );
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteReviewId || !restaurantId) return;
+
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`/api/reviews/${pendingDeleteReviewId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok && res.status !== 204) {
+        const payload = await res.json().catch(() => null as any);
+        const message = payload?.error?.message ?? "리뷰를 삭제하지 못했습니다.";
+        throw new Error(message);
+      }
+
+      setConfirmDeleteOpen(false);
+      setPendingDeleteReviewId(null);
+      setIsDeleting(false);
+
+      toast({ title: "리뷰가 삭제되었습니다." });
+
+      // 목록/상세/마커 캐시 무효화는 ReviewList / hooks 쪽에서 queryKey 기반으로 처리 중
+      // 여기서는 페이지 새로고침으로 간단히 반영 (필요시 React Query invalidate 추가 가능)
+      window.location.reload();
+    } catch (error) {
+      setIsDeleting(false);
+      toast({
+        variant: "destructive",
+        title: "삭제 실패",
+        description:
+          error instanceof Error ? error.message : "리뷰 삭제 중 문제가 발생했습니다.",
+      });
     }
   };
 
@@ -218,6 +265,17 @@ export default function RestaurantDetailPage({
           attemptsLeft={dialogState.attemptsLeft}
         />
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="리뷰를 삭제하시겠습니까?"
+        description="삭제 후에는 되돌릴 수 없습니다."
+        confirmLabel="예"
+        cancelLabel="아니오"
+        isConfirming={isDeleting}
+        onOpenChange={setConfirmDeleteOpen}
+        onConfirm={handleConfirmDelete}
+      />
     </main>
   );
 }

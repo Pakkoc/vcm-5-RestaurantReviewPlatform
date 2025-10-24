@@ -10,6 +10,7 @@ export const reviewErrorCodes = {
   verifyRequestInvalid: "REVIEW_VERIFY_REQUEST_INVALID",
   verifyFailed: "REVIEW_VERIFY_FAILED",
   verifyRateLimited: "REVIEW_VERIFY_RATE_LIMITED",
+  deleteFailed: "REVIEW_DELETE_FAILED",
 } as const;
 
 export type ReviewServiceError =
