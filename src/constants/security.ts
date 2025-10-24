@@ -14,6 +14,9 @@ const NAVER_DOMAINS: DirectiveSources = [
   "https://*.ntruss.com",
   "https://*.pstatic.net",
   "https://*.map.naver.net",
+  "http://*.map.naver.net",
+  "http://*.naver.net",
+  "http://*.pstatic.net",
 ];
 
 const SUPABASE_DOMAINS: DirectiveSources = [
@@ -63,14 +66,13 @@ const fontSrc = () => serialize([SELF, DATA]);
 
 const frameSrc = () => serialize([NAVER_SCRIPT_ENDPOINT, ...NAVER_DOMAINS]);
 
-export const createContentSecurityPolicy = (_nonce: string) =>
-  [
+export const createContentSecurityPolicy = (_nonce: string) => {
+  const directives = [
     `default-src ${SELF}`,
     `base-uri ${SELF}`,
     "object-src 'none'",
     `form-action ${SELF}`,
     `frame-ancestors ${SELF}`,
-    "upgrade-insecure-requests",
     `script-src ${scriptSrc()}`,
     `script-src-elem ${scriptSrc()}`,
     `style-src ${styleSrc()}`,
@@ -80,4 +82,12 @@ export const createContentSecurityPolicy = (_nonce: string) =>
     `connect-src ${connectSrc()}`,
     `font-src ${fontSrc()}`,
     `frame-src ${frameSrc()}`,
-  ].join("; ");
+  ];
+
+  // 프로덕션 환경에서만 upgrade-insecure-requests 적용
+  if (process.env.NODE_ENV === "production") {
+    directives.push("upgrade-insecure-requests");
+  }
+
+  return directives.join("; ");
+};
