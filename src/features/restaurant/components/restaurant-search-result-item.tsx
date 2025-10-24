@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import type { RestaurantSearchResult } from "@/features/restaurant/lib/dto";
 
@@ -10,29 +9,11 @@ type RestaurantSearchResultItemProps = {
   onReview: (result: RestaurantSearchResult) => void;
 };
 
-const createPlaceholderImageUrl = (seedSource: string) => {
-  const seed = encodeURIComponent(seedSource);
-  return `https://picsum.photos/seed/${seed}/80/80`;
-};
-
 export const RestaurantSearchResultItem = memo(
   ({ result, onReview }: RestaurantSearchResultItemProps) => {
-    const placeholderImage = useMemo(() => {
-      const seed = result.naverPlaceId ?? result.name;
-      return createPlaceholderImageUrl(seed);
-    }, [result.name, result.naverPlaceId]);
-
     return (
-      <article className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <Image
-          src={placeholderImage}
-          alt={`${result.name} placeholder`}
-          width={80}
-          height={80}
-          className="h-20 w-20 rounded-lg object-cover"
-          priority={false}
-        />
-        <div className="flex-1 space-y-2">
+      <article className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
           <div>
             <h3 className="text-base font-semibold text-slate-900">
               {result.name}
@@ -55,7 +36,7 @@ export const RestaurantSearchResultItem = memo(
         <Button
           type="button"
           onClick={() => onReview(result)}
-          className="shrink-0"
+          className="shrink-0 self-start sm:self-auto"
         >
           리뷰 작성
         </Button>
