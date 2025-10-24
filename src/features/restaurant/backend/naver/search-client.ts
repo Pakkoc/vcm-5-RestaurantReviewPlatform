@@ -82,7 +82,7 @@ export const createNaverSearchClient = (
       const response = await fetchImpl(endpoint.toString(), {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
+          Accept: "application/json",
           "X-Naver-Client-Id": config.clientId,
           "X-Naver-Client-Secret": config.clientSecret,
         },
@@ -90,6 +90,22 @@ export const createNaverSearchClient = (
       });
 
       if (!response.ok) {
+        let responseText: string | null = null;
+        try {
+          responseText = await response.text();
+        } catch {
+          responseText = null;
+        }
+
+        // Minimal diagnostics without leaking credentials
+        // eslint-disable-next-line no-console
+        console.error(
+          "[NaverSearch] upstream not ok",
+          response.status,
+          response.statusText,
+          responseText ? responseText.slice(0, 200) : null,
+        );
+
         throw new NaverSearchClientError(
           `Failed to fetch Naver search results: ${response.status} ${response.statusText}`,
           restaurantErrorCodes.searchUpstreamFailed,

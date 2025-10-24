@@ -79,7 +79,10 @@ export const RestaurantSearchNaverItemSchema = z.object({
   address: z.string().nullable().optional(),
   mapx: z.coerce.number().nullable().optional(),
   mapy: z.coerce.number().nullable().optional(),
-  link: z.string().url().nullable().optional(),
+  // 일부 응답은 빈 문자열("")을 반환하므로 URL 제약을 제거하고 null/undefined/빈 문자열 모두 허용
+  link: z
+    .union([z.string(), z.null()])
+    .optional(),
   telephone: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
 });
