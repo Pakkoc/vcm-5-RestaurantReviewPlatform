@@ -7,6 +7,7 @@ import {
   type AppEnv,
 } from "@/backend/hono/context";
 import {
+  createRestaurant,
   getRestaurantMarkers,
   searchRestaurants,
 } from "@/features/restaurant/backend/service";
@@ -14,9 +15,64 @@ import {
   restaurantErrorCodes,
   type RestaurantServiceError,
 } from "@/features/restaurant/backend/error";
-import { RestaurantSearchRequestSchema } from "@/features/restaurant/backend/schema";
+import {
+  CreateRestaurantRequestSchema,
+  RestaurantSearchRequestSchema,
+} from "@/features/restaurant/backend/schema";
 
 export const registerRestaurantRoutes = (app: Hono<AppEnv>) => {
+  app.post("/api/restaurants", async (c) => {
+    const logger = getLogger(c);
+    const supabase = getSupabase(c);
+
+    let payload: unknown;
+
+    try {
+      payload = await c.req.json();
+    } catch (error) {
+      logger.warn("Failed to parse create restaurant payload", error);
+      return respond(
+        c,
+        failure(
+          400,
+          restaurantErrorCodes.createRequestInvalid,
+          "요청 본문을 읽는 중 문제가 발생했습니다.",
+        ),
+      );
+    }
+
+    const parsed = CreateRestaurantRequestSchema.safeParse(payload);
+
+    if (!parsed.success) {
+      return respond(
+        c,
+        failure(
+          400,
+          restaurantErrorCodes.createRequestInvalid,
+          "음식점 정보가 올바르지 않습니다.",
+          parsed.error.format(),
+        ),
+      );
+    }
+
+    const result = await createRestaurant(supabase, parsed.data);
+
+    if (!result.ok) {
+      const errorResult = result as ErrorResult<
+        RestaurantServiceError,
+        unknown
+      >;
+
+      logger.error(
+        "Failed to create or fetch restaurant",
+        errorResult.error.message,
+        errorResult.error.details ?? null,
+      );
+    }
+
+    return respond(c, result);
+  });
+
   app.post("/api/restaurants/search", async (c) => {
     const logger = getLogger(c);
     const supabase = getSupabase(c);

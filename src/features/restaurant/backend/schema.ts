@@ -113,3 +113,47 @@ export type RestaurantSearchResult = z.infer<
 export const RestaurantSearchListSchema = z.array(
   RestaurantSearchResultSchema,
 );
+
+export const RestaurantRecordSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  address: z.string(),
+  category: z.string().nullable(),
+  latitude: z.coerce
+    .number()
+    .refine(Number.isFinite, "latitude must be a finite number"),
+  longitude: z.coerce
+    .number()
+    .refine(Number.isFinite, "longitude must be a finite number"),
+  naver_place_id: z.string().nullable(),
+});
+
+export type RestaurantRecord = z.infer<typeof RestaurantRecordSchema>;
+
+export const CreateRestaurantRequestSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  address: z.string().trim().min(1),
+  category: z.string().trim().max(100).nullable().optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  naverPlaceId: z.string().trim().max(255).nullable().optional(),
+});
+
+export type CreateRestaurantRequest = z.infer<
+  typeof CreateRestaurantRequestSchema
+>;
+
+export const CreateRestaurantResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  address: z.string(),
+  category: z.string().nullable(),
+  latitude: z.number(),
+  longitude: z.number(),
+  naverPlaceId: z.string().nullable(),
+  isNew: z.boolean(),
+});
+
+export type CreateRestaurantResponse = z.infer<
+  typeof CreateRestaurantResponseSchema
+>;

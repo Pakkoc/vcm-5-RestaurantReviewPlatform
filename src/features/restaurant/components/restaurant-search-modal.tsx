@@ -19,7 +19,6 @@ type RestaurantSearchModalProps = {
   errorMessage?: string | null;
   onClose: () => void;
   onRetry: () => void;
-  onReview: (result: RestaurantSearchResult) => void;
 };
 
 const LoadingState = () => (
@@ -68,7 +67,6 @@ export const RestaurantSearchModal = ({
   errorMessage,
   onClose,
   onRetry,
-  onReview,
 }: RestaurantSearchModalProps) => {
   const description = (() => {
     if (state === "loading") {
@@ -110,7 +108,7 @@ export const RestaurantSearchModal = ({
           <RestaurantSearchResultItem
             key={`${result.restaurantId ?? result.naverPlaceId ?? result.name}-${index}`}
             result={result}
-            onReview={onReview}
+            onClose={onClose}
           />
         ))}
       </div>

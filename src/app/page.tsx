@@ -146,35 +146,6 @@ export default function HomePage({ params }: HomePageProps) {
     resetSearch();
   }, [resetSearch]);
 
-  const handleReviewSelect = useCallback(
-    (result: RestaurantSearchResult) => {
-      const params = new URLSearchParams();
-
-      if (result.restaurantId) {
-        params.set("restaurantId", result.restaurantId);
-      } else if (result.naverPlaceId) {
-        params.set("naverPlaceId", result.naverPlaceId);
-      } else {
-        params.set("name", result.name);
-      }
-
-      params.set("address", result.address);
-
-      if (result.category) {
-        params.set("category", result.category);
-      }
-
-      if (result.latitude !== null && result.longitude !== null) {
-        params.set("latitude", String(result.latitude));
-        params.set("longitude", String(result.longitude));
-      }
-
-      handleModalClose();
-      router.push(`/review/create?${params.toString()}`);
-    },
-    [handleModalClose, router],
-  );
-
   const handleMarkerClick = useCallback(
     (marker: RestaurantMarker) => {
       router.push(`/restaurant/${marker.id}`);
@@ -282,7 +253,6 @@ export default function HomePage({ params }: HomePageProps) {
         errorMessage={modalError}
         onClose={handleModalClose}
         onRetry={handleRetrySearch}
-        onReview={handleReviewSelect}
       />
     </main>
   );

@@ -9,8 +9,12 @@ import {
   RestaurantBaseRowSchema,
   RestaurantMarkerAggregateRowSchema,
   RestaurantMarkerListSchema,
+  RestaurantRecordSchema,
   RestaurantSearchListSchema,
   RestaurantIdentifierRowSchema,
+  CreateRestaurantResponseSchema,
+  type CreateRestaurantRequest,
+  type CreateRestaurantResponse,
   type RestaurantMarker,
   type RestaurantSearchNaverItem,
   type RestaurantSearchResult,
@@ -32,6 +36,228 @@ import {
 
 const RESTAURANT_TABLE = "restaurants";
 const RESTAURANT_AGGREGATE_VIEW = "restaurant_review_aggregates";
+const RESTAURANT_SELECT_COLUMNS =
+  "id, name, address, category, latitude, longitude, naver_place_id";
+
+type SanitizedRestaurantPayload = {
+  name: string;
+  address: string;
+  category: string | null;
+  latitude: number;
+  longitude: number;
+  naverPlaceId: string | null;
+};
+
+const sanitizeRestaurantPayload = (
+  payload: CreateRestaurantRequest,
+): SanitizedRestaurantPayload | null => {
+  const name = normalizeWhitespace(payload.name);
+  const address = normalizeWhitespace(payload.address);
+
+  if (!name || !address) {
+    return null;
+  }
+
+  const categoryValue =
+    payload.category === null || payload.category === undefined
+      ? null
+      : normalizeWhitespace(payload.category);
+
+  const category = categoryValue && categoryValue.length > 0 ? categoryValue : null;
+
+  const latitude = Number(payload.latitude);
+  const longitude = Number(payload.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  const naverPlaceIdValue =
+    payload.naverPlaceId === null || payload.naverPlaceId === undefined
+      ? null
+      : normalizeWhitespace(payload.naverPlaceId);
+
+  const naverPlaceId =
+    naverPlaceIdValue && naverPlaceIdValue.length > 0 ? naverPlaceIdValue : null;
+
+  return {
+    name,
+    address,
+    category,
+    latitude,
+    longitude,
+    naverPlaceId,
+  };
+};
+
+const mapRecordToResponse = (
+  record: unknown,
+  isNew: boolean,
+): HandlerResult<CreateRestaurantResponse, RestaurantServiceError, unknown> => {
+  const parsedRecord = RestaurantRecordSchema.safeParse(record ?? null);
+
+  if (!parsedRecord.success) {
+    return failure(
+      500,
+      restaurantErrorCodes.createValidationFailed,
+      "음식점 데이터 검증에 실패했습니다.",
+      parsedRecord.error.format(),
+    );
+  }
+
+  const candidate = {
+    id: parsedRecord.data.id,
+    name: parsedRecord.data.name,
+    address: parsedRecord.data.address,
+    category: parsedRecord.data.category,
+    latitude: Number(parsedRecord.data.latitude),
+    longitude: Number(parsedRecord.data.longitude),
+    naverPlaceId: parsedRecord.data.naver_place_id,
+    isNew,
+  } satisfies CreateRestaurantResponse;
+
+  const parsedResponse = CreateRestaurantResponseSchema.safeParse(candidate);
+
+  if (!parsedResponse.success) {
+    return failure(
+      500,
+      restaurantErrorCodes.createValidationFailed,
+      "음식점 응답 데이터를 검증하지 못했습니다.",
+      parsedResponse.error.format(),
+    );
+  }
+
+  return success(parsedResponse.data, isNew ? 201 : 200);
+};
+
+const fetchRestaurantByNaverPlaceId = async (
+  client: SupabaseClient,
+  naverPlaceId: string,
+) => {
+  return client
+    .from(RESTAURANT_TABLE)
+    .select(RESTAURANT_SELECT_COLUMNS)
+    .eq("naver_place_id", naverPlaceId)
+    .maybeSingle();
+};
+
+const fetchRestaurantByNameAndAddress = async (
+  client: SupabaseClient,
+  name: string,
+  address: string,
+) => {
+  return client
+    .from(RESTAURANT_TABLE)
+    .select(RESTAURANT_SELECT_COLUMNS)
+    .eq("name", name)
+    .eq("address", address)
+    .maybeSingle();
+};
+
+export const createRestaurant = async (
+  client: SupabaseClient,
+  payload: CreateRestaurantRequest,
+): Promise<
+  HandlerResult<CreateRestaurantResponse, RestaurantServiceError, unknown>
+> => {
+  const sanitized = sanitizeRestaurantPayload(payload);
+
+  if (!sanitized) {
+    return failure(
+      400,
+      restaurantErrorCodes.createRequestInvalid,
+      "음식점 정보를 확인할 수 없습니다.",
+    );
+  }
+
+  if (sanitized.naverPlaceId) {
+    const { data: existing, error: existingError } =
+      await fetchRestaurantByNaverPlaceId(
+        client,
+        sanitized.naverPlaceId,
+      );
+
+    if (existingError) {
+      return failure(
+        500,
+        restaurantErrorCodes.createUpsertFailed,
+        existingError.message,
+      );
+    }
+
+    if (existing) {
+      return mapRecordToResponse(existing, false);
+    }
+  }
+
+  if (!sanitized.naverPlaceId) {
+    const { data: existingByName, error: existingByNameError } =
+      await fetchRestaurantByNameAndAddress(
+        client,
+        sanitized.name,
+        sanitized.address,
+      );
+
+    if (existingByNameError) {
+      return failure(
+        500,
+        restaurantErrorCodes.createUpsertFailed,
+        existingByNameError.message,
+      );
+    }
+
+    if (existingByName) {
+      return mapRecordToResponse(existingByName, false);
+    }
+  }
+
+  const { data: inserted, error: insertError } = await client
+    .from(RESTAURANT_TABLE)
+    .insert({
+      name: sanitized.name,
+      address: sanitized.address,
+      category: sanitized.category,
+      latitude: sanitized.latitude,
+      longitude: sanitized.longitude,
+      naver_place_id: sanitized.naverPlaceId,
+    })
+    .select(RESTAURANT_SELECT_COLUMNS)
+    .single();
+
+  if (insertError) {
+    if (insertError.code === "23505" && sanitized.naverPlaceId) {
+      const { data: conflictRow, error: conflictError } =
+        await fetchRestaurantByNaverPlaceId(
+          client,
+          sanitized.naverPlaceId,
+        );
+
+      if (conflictError) {
+        return failure(
+          500,
+          restaurantErrorCodes.createUpsertFailed,
+          conflictError.message,
+        );
+      }
+
+      if (conflictRow) {
+        return mapRecordToResponse(conflictRow, false);
+      }
+    }
+
+    return failure(
+      500,
+      restaurantErrorCodes.createUpsertFailed,
+      insertError.message,
+    );
+  }
+
+  return mapRecordToResponse(inserted, true);
+};
 
 export const getRestaurantMarkers = async (
   client: SupabaseClient,
