@@ -47,6 +47,47 @@ export const useNaverMapScript = () => {
       return;
     }
 
+    const credentialCandidates = [
+      ...(keyId
+        ? [
+            {
+              param: "ncpKeyId" as const,
+              value: keyId,
+              description: "신규 ncpKeyId",
+            },
+          ]
+        : []),
+      ...(clientId
+        ? [
+            {
+              param: "ncpClientId" as const,
+              value: clientId,
+              description: "레거시 ncpClientId",
+            },
+          ]
+        : []),
+      ...(keyId && !clientId
+        ? [
+            {
+              param: "ncpClientId" as const,
+              value: keyId,
+              description: "ncpKeyId → ncpClientId 폴백",
+            },
+          ]
+        : []),
+    ];
+
+    if (credentialCandidates.length === 0) {
+      console.error("사용 가능한 NAVER 지도 인증 정보 후보가 없습니다.");
+      setStatus("error");
+      return;
+    }
+
+    const currentCandidate =
+      credentialCandidates[
+        Math.min(retryCount, credentialCandidates.length - 1)
+      ];
+
     if (retryCount > NAVER_MAP_MAX_RETRY) {
       setStatus("error");
       return;
@@ -89,11 +130,8 @@ export const useNaverMapScript = () => {
       script.setAttribute("nonce", effectiveNonce);
     }
     const scriptUrl = new URL(NAVER_MAP_SCRIPT_URL);
-    if (keyId) {
-      scriptUrl.searchParams.set("ncpKeyId", keyId);
-    } else if (clientId) {
-      scriptUrl.searchParams.set("ncpClientId", clientId);
-    }
+    scriptUrl.searchParams.set(currentCandidate.param, currentCandidate.value);
+    script.dataset.naverMapsCredentialType = currentCandidate.param;
 
     const serviceMode = process.env.NEXT_PUBLIC_NAVER_MAPS_SERVICE_MODE;
     if (serviceMode) {
@@ -107,6 +145,9 @@ export const useNaverMapScript = () => {
 
     script.src = scriptUrl.toString();
     script.async = true;
+    console.info(
+      `[NAVER_MAP] SDK 로드 시도 (${retryCount + 1}회차): ${currentCandidate.description} 사용`,
+    );
 
     script.onload = () => {
       if (cancelled) {
@@ -121,6 +162,9 @@ export const useNaverMapScript = () => {
     };
 
     script.onerror = () => {
+      console.warn(
+        `[NAVER_MAP] SDK 로드 실패 (${retryCount + 1}회차): ${currentCandidate.description}`,
+      );
       if (cancelled) {
         return;
       }
