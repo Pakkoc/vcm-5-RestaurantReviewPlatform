@@ -375,7 +375,7 @@ export const getRestaurantMarkers = async (
   return success(validation.data);
 };
 
-const NAVER_COORDINATE_SCALE = 100_000;
+const NAVER_COORDINATE_SCALE = 10_000_000;
 
 const convertCoordinate = (value: number | null | undefined): number | null => {
   if (value === null || value === undefined || Number.isNaN(value)) {
