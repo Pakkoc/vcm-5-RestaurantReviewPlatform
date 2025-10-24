@@ -37,10 +37,11 @@ export const useNaverMapScript = () => {
     }
 
     const keyId = process.env.NEXT_PUBLIC_NAVER_MAPS_KEY_ID;
+    const clientId = process.env.NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID;
 
-    if (!keyId) {
+    if (!keyId && !clientId) {
       console.error(
-        "NEXT_PUBLIC_NAVER_MAPS_KEY_ID is not defined. Please configure the environment variable.",
+        "NEXT_PUBLIC_NAVER_MAPS_KEY_ID 또는 NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID가 설정되지 않았습니다. 환경 변수를 확인하세요.",
       );
       setStatus("error");
       return;
@@ -88,7 +89,11 @@ export const useNaverMapScript = () => {
       script.setAttribute("nonce", effectiveNonce);
     }
     const scriptUrl = new URL(NAVER_MAP_SCRIPT_URL);
-    scriptUrl.searchParams.set("ncpKeyId", keyId);
+    if (keyId) {
+      scriptUrl.searchParams.set("ncpKeyId", keyId);
+    } else if (clientId) {
+      scriptUrl.searchParams.set("ncpClientId", clientId);
+    }
 
     const serviceMode = process.env.NEXT_PUBLIC_NAVER_MAPS_SERVICE_MODE;
     if (serviceMode) {
