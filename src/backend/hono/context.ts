@@ -8,6 +8,15 @@ export type AppConfig = {
     url: string;
     serviceRoleKey: string;
   };
+  naver: {
+    search: {
+      baseUrl: string;
+      clientId: string;
+      clientSecret: string;
+      timeoutMs: number;
+      maxResults: number;
+    };
+  };
 };
 
 export type AppVariables = {
