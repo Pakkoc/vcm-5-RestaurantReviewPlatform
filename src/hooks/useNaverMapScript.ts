@@ -53,24 +53,19 @@ export const useNaverMapScript = () => {
       description: string;
     }> = [];
 
+    if (keyId) {
+      credentialCandidates.push({
+        param: "ncpKeyId",
+        value: keyId,
+        description: "신규 ncpKeyId",
+      });
+    }
+
     if (clientId) {
       credentialCandidates.push({
         param: "ncpClientId",
         value: clientId,
         description: "레거시 ncpClientId",
-      });
-    }
-
-    if (keyId) {
-      credentialCandidates.push({
-        param: "ncpClientId",
-        value: keyId,
-        description: "ncpKeyId → ncpClientId 폴백",
-      });
-      credentialCandidates.push({
-        param: "ncpKeyId",
-        value: keyId,
-        description: "신규 ncpKeyId",
       });
     }
 
