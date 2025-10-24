@@ -184,6 +184,110 @@ export async function GET(req: Request) {
 
 ---
 
+## D) 로컬에서 지도는 안 뜨고, 배포(Vercel)에서는 뜨는 경우 (CSP/HTTP↔HTTPS)
+
+### 증상
+- Vercel 배포에서는 지도가 정상 표시되지만, 로컬 `http://localhost:3000`에서는 지도 영역이 빈 화면이며 콘솔과 네트워크 탭에 아래와 같은 로그가 반복됨.
+  - `Failed to load resource: net::ERR_CONNECTION_REFUSED https://nrbe.map.naver.net/...`
+  - 반면 다른 예제(예: `localhost:3001`)는 `http://nrbe.map.naver.net/...`로 타일이 로드되어 정상 표시됨
+
+### 원인
+- 개발 환경의 **CSP(Content Security Policy)** 가 `upgrade-insecure-requests`를 포함하고 있으면, 브라우저가 **HTTP 요청을 HTTPS로 강제 업그레이드**함.
+- 네이버 지도 타일 CDN(`nrbe.map.naver.net`)은 환경/망에 따라 **HTTPS(443)가 차단**되어 있을 수 있음. 이 경우 HTTP(80)는 성공하지만, 강제 업그레이드로 인해 HTTPS로 접속하여 실패(`ERR_CONNECTION_REFUSED`).
+- 키 타입에 따른 CDN 차이도 존재함: `ncpKeyId`는 주로 `*.map.naver.net`, `ncpClientId`는 `*.pstatic.net`을 사용.
+
+### 해결 방법 (권장 순서)
+1. 개발 환경(CSR/HMR)에서는 CSP를 **느슨하게** 적용하여 HTTP를 허용한다.
+   - 예시: `src/constants/security.ts`
+
+```ts:src/constants/security.ts
+export const createContentSecurityPolicy = (_nonce: string) => {
+  // 개발 환경에서는 느슨한 CSP 사용 (HTTP 허용)
+  if (process.env.NODE_ENV === "development") {
+    return [
+      "default-src *",
+      "script-src * 'unsafe-inline' 'unsafe-eval'",
+      "style-src * 'unsafe-inline'",
+      "img-src * data: blob:",
+      "connect-src *",
+      "font-src *",
+      "frame-src *",
+    ].join("; ");
+  }
+
+  // 프로덕션에서는 엄격한 CSP 유지
+  return [
+    // ...생략...,
+    "upgrade-insecure-requests", // 운영에서만 유지
+  ].join("; ");
+};
+```
+
+2. 필요 시 네이버 도메인의 **HTTP 스킴을 허용**한다.
+
+```ts:src/constants/security.ts
+const NAVER_DOMAINS = [
+  // ... https 도메인들 ...
+  "http://*.map.naver.net",
+  "http://*.naver.net",
+  "http://*.pstatic.net",
+];
+
+const connectSrc = () => serialize([
+  // ...
+  "http:", // 개발 중 HTTP 연결 허용
+]);
+```
+
+3. SDK 로딩은 안정적인 **동적 로딩 패턴**을 권장한다. (중복 로딩 방지 + 준비 상태 폴링)
+
+```ts:src/hooks/useNaverMapScript.ts
+let isMapSdkLoaded = false;
+let isMapSdkLoading = false;
+let loadPromise: Promise<void> | null = null;
+
+const waitForNaverMaps = (maxAttempts = 50, interval = 100) =>
+  new Promise<void>((resolve, reject) => {
+    let attempts = 0;
+    const check = () => {
+      attempts++;
+      if (window.naver?.maps) resolve();
+      else if (attempts >= maxAttempts) reject(new Error("timeout"));
+      else setTimeout(check, interval);
+    };
+    check();
+  });
+
+const loadNaverMapSdk = () => {
+  if (isMapSdkLoaded && window.naver?.maps) return Promise.resolve();
+  if (isMapSdkLoading && loadPromise) return loadPromise;
+  isMapSdkLoading = true;
+  loadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAPS_KEY_ID}`;
+    s.async = true;
+    s.onload = () => waitForNaverMaps().then(() => { isMapSdkLoaded = true; isMapSdkLoading = false; resolve(); }).catch(reject);
+    s.onerror = () => { isMapSdkLoading = false; loadPromise = null; reject(new Error("SDK load failed")); };
+    document.head.appendChild(s);
+  });
+  return loadPromise;
+};
+```
+
+### 진단 체크리스트
+1. 개발자 도구 Network에서 타일 요청의 **프로토콜** 확인: `http://nrbe.map.naver.net`(정상) vs `https://nrbe.map.naver.net`(로컬에서 차단될 수 있음)
+2. PowerShell 테스트:
+   - `Test-NetConnection nrbe.map.naver.net -Port 80` → 성공 여부 확인
+   - `Test-NetConnection nrbe.map.naver.net -Port 443` → 실패 시 HTTPS 차단 가능성 높음
+3. CSP 헤더에서 `upgrade-insecure-requests`가 **개발 시 제거**되었는지, `connect-src`/도메인 화이트리스트에 **HTTP가 포함**되었는지 확인
+4. 키 타입 변경으로 CDN이 바뀌는지 검토: `ncpClientId(=*.pstatic.net)` vs `ncpKeyId(=*.map.naver.net)`
+
+### 참고
+- 로컬 HTTPS 개발서버(mkcert 등)를 쓰더라도, 타일 CDN의 **HTTPS(443) 경로 자체가 망에서 차단**되어 있다면 여전히 실패할 수 있음. 이 경우 개발환경에서 HTTP 허용이 가장 현실적인 우회책.
+
+
+---
+
 # 4) Step-by-Step (실행 순서 가이드)
 
 ## STEP 0. 런타임

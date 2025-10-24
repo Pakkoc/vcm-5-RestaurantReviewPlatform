@@ -125,3 +125,45 @@ window.navermap_authFailure = function() {
     console.log("Naver Map API 인증에 실패했습니다.");
 };
 ```
+
+---
+
+## 🧪 로컬 개발 환경 트러블슈팅 (CSP와 HTTP/HTTPS)
+
+### 증상
+- 배포(Vercel)에서는 지도 표시, 로컬(예: `localhost:3000`)에서는 빈 화면 + 콘솔에 `ERR_CONNECTION_REFUSED https://nrbe.map.naver.net/...`
+
+### 핵심 원인
+- CSP에 포함된 `upgrade-insecure-requests`가 HTTP 요청을 HTTPS로 강제 → 로컬 망에서 `nrbe.map.naver.net:443`이 차단된 경우 실패
+- `ncpKeyId`는 `*.map.naver.net`, `ncpClientId`는 `*.pstatic.net` CDN을 사용(방화벽/허용 도메인 차이 가능)
+
+### 해결 Quick Start
+1) 개발 환경에서는 CSP를 느슨하게 설정해 HTTP 허용
+
+```ts
+// createContentSecurityPolicy (development)
+return [
+  "default-src *",
+  "script-src * 'unsafe-inline' 'unsafe-eval'",
+  "style-src * 'unsafe-inline'",
+  "img-src * data: blob:",
+  "connect-src *",
+  "font-src *",
+  "frame-src *",
+].join('; ');
+```
+
+2) 네이버 도메인의 HTTP 스킴 화이트리스트 추가
+
+```ts
+const NAVER_DOMAINS = [
+  // ... https 도메인들 ...
+  'http://*.map.naver.net',
+  'http://*.naver.net',
+  'http://*.pstatic.net',
+];
+```
+
+3) 네트워크 점검
+- `Test-NetConnection nrbe.map.naver.net -Port 80`(HTTP) vs `-Port 443`(HTTPS)
+- HTTP만 성공하면 개발 환경은 HTTP 허용, 운영은 HTTPS 유지(CSP 분기)
