@@ -1,92 +1,291 @@
-이 프로젝트는 [`EasyNext`](https://github.com/easynext/easynext)를 사용해 생성된 [Next.js](https://nextjs.org) 프로젝트입니다.
+# 🍽️ 위치 기반 맛집 리뷰 플랫폼
 
-## Getting Started
+> 바이브코딩 포트폴리오 프로젝트
 
-개발 서버를 실행합니다.<br/>
-환경에 따른 명령어를 사용해주세요.
+## 📌 프로젝트 소개
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**위치 기반 맛집 리뷰 플랫폼**은 네이버 지도 SDK와 검색 API를 활용하여 사용자들이 지도를 기반으로 맛집을 검색하고, 리뷰를 작성 및 조회할 수 있는 웹 애플리케이션입니다.
+
+로그인 없이도 누구나 자유롭게 맛집을 검색하고, 리뷰를 작성하며, 다른 사용자들의 리뷰를 확인할 수 있는 **접근성 높은 오픈 플랫폼**을 목표로 개발되었습니다.
+
+## 🎯 핵심 가치
+
+### 1. **간편한 접근성**
+- 회원가입이나 로그인 없이 즉시 사용 가능
+- 누구나 자유롭게 리뷰를 작성하고 공유할 수 있는 개방형 플랫폼
+
+### 2. **시각적 정보 제공**
+- 네이버 지도 기반 인터페이스로 위치 정보를 직관적으로 파악
+- 리뷰가 존재하는 음식점을 지도 마커로 시각화
+- 마커 호버 시 음식점의 간략한 정보(평점, 리뷰 개수) 즉시 확인
+
+### 3. **실시간 검색**
+- 네이버 검색 API를 통한 정확하고 빠른 맛집 검색
+- 키워드 기반 검색으로 원하는 음식점을 쉽게 찾기
+
+### 4. **투명한 리뷰 시스템**
+- 모든 리뷰가 공개되어 투명하게 공유
+- 별점(1~5점)과 상세한 리뷰 내용으로 신뢰도 높은 정보 제공
+- 비밀번호 기반 인증으로 리뷰 작성자만 수정/삭제 가능
+
+## 🌟 주요 기능
+
+### 📍 지도 기반 맛집 탐색
+- **네이버 지도 통합**: 전체 화면 지도로 주변 맛집을 한눈에 확인
+- **스마트 마커**: 리뷰가 1개 이상 있는 음식점만 마커로 표시
+- **인터랙티브 툴팁**: 마커에 마우스를 올리면 음식점 이름, 평균 평점, 카테고리, 리뷰 개수를 즉시 확인
+- **원클릭 이동**: 마커 클릭 시 해당 음식점의 상세 페이지로 바로 이동
+
+### 🔍 강력한 검색 기능
+- **네이버 검색 API 연동**: 정확도 높은 음식점 검색 결과 제공
+- **상위 10개 결과**: 검색 결과를 모달로 깔끔하게 표시
+- **상세 정보 제공**: 각 검색 결과에 음식점 이름, 주소, 카테고리 포함
+- **빠른 리뷰 작성**: 검색 결과에서 바로 리뷰 작성 페이지로 이동
+
+### ✍️ 간편한 리뷰 작성
+- **필수 정보 입력**: 작성자명, 평점(1~5점), 리뷰 내용, 비밀번호
+- **실시간 유효성 검사**: 입력 중 즉시 피드백 제공
+- **비밀번호 보호**: 4자리 이상 비밀번호로 리뷰 수정/삭제 권한 관리
+- **자동 통계 업데이트**: 리뷰 작성 시 평균 평점과 리뷰 개수 자동 갱신
+
+### 📊 상세한 리뷰 조회
+- **음식점 정보**: 이름, 주소, 평균 별점, 총 리뷰 개수 표시
+- **최신순 정렬**: 가장 최근 리뷰가 상단에 표시
+- **리뷰 카드**: 작성자명, 작성 날짜, 별점, 리뷰 내용을 깔끔하게 정리
+- **빈 상태 처리**: 리뷰가 없을 경우 첫 리뷰 작성 유도
+
+## 🏗️ 기술 아키텍처
+
+### Frontend
+- **Next.js 15**: React 기반 풀스택 프레임워크
+- **TypeScript**: 타입 안정성을 위한 정적 타입 언어
+- **Tailwind CSS**: 유틸리티 우선 CSS 프레임워크
+- **shadcn/ui**: 접근성 높은 재사용 가능한 UI 컴포넌트
+- **React Query**: 서버 상태 관리 및 캐싱
+- **Zustand**: 경량 전역 상태 관리
+
+### Backend
+- **Hono.js**: 고성능 경량 웹 프레임워크
+- **Next.js API Routes**: Hono 앱을 Next.js에 통합
+- **Zod**: 스키마 기반 데이터 유효성 검사
+- **bcrypt**: 비밀번호 암호화
+
+### Database
+- **Supabase**: PostgreSQL 기반 BaaS (Backend as a Service)
+- **Row Level Security 비활성화**: 비로그인 서비스 특성상 간소화된 보안 모델
+
+### External APIs
+- **네이버 지도 SDK**: 지도 렌더링 및 마커 관리
+- **네이버 검색 API**: 장소 검색 기능
+
+### Development Tools
+- **ESLint**: 코드 품질 관리
+- **date-fns**: 날짜 처리
+- **es-toolkit**: 유틸리티 함수
+- **react-hook-form**: 폼 상태 관리 및 유효성 검사
+
+## 📐 시스템 설계
+
+### 디렉토리 구조
+```
+src/
+├── app/                      # Next.js App Router
+│   ├── api/[[...hono]]/     # Hono 통합 API 엔드포인트
+│   ├── restaurant/          # 음식점 상세 페이지
+│   ├── review/create/       # 리뷰 작성 페이지
+│   └── page.tsx             # 메인 페이지 (지도 + 검색)
+├── backend/                 # 백엔드 레이어
+│   ├── hono/               # Hono 앱 설정
+│   ├── middleware/         # 공통 미들웨어
+│   ├── http/               # HTTP 응답 헬퍼
+│   ├── supabase/           # Supabase 클라이언트
+│   └── config/             # 환경 변수 관리
+├── features/               # 기능별 모듈
+│   ├── restaurant/         # 음식점 검색 및 관리
+│   │   ├── backend/       # API 라우트, 서비스, 스키마
+│   │   ├── components/    # UI 컴포넌트
+│   │   ├── hooks/         # React Query 훅
+│   │   └── lib/           # DTO 및 유틸리티
+│   └── review/            # 리뷰 작성 및 조회
+│       ├── backend/       # API 라우트, 서비스, 스키마
+│       ├── components/    # UI 컴포넌트
+│       ├── hooks/         # React Query 훅
+│       └── lib/           # DTO 및 유틸리티
+├── components/ui/          # shadcn/ui 공통 컴포넌트
+└── lib/                    # 공통 유틸리티
 ```
 
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 결과를 확인할 수 있습니다.
+### 데이터 모델
 
-`app/page.tsx` 파일을 수정하여 페이지를 편집할 수 있습니다. 파일을 수정하면 자동으로 페이지가 업데이트됩니다.
+#### Restaurant (음식점)
+- 음식점 기본 정보 (이름, 주소, 카테고리)
+- 위치 정보 (위도, 경도)
+- 네이버 플레이스 ID (외부 연동)
+- 생성/수정 타임스탬프
 
-## 기본 포함 라이브러리
+#### Review (리뷰)
+- 리뷰 내용 (작성자명, 평점, 내용)
+- 비밀번호 해시 (수정/삭제 인증용)
+- 음식점 외래키 (Restaurant 연결)
+- 생성/수정 타임스탬프
 
-- [Next.js](https://nextjs.org)
-- [React](https://react.dev)
-- [Tailwind CSS](https://tailwindcss.com)
-- [TypeScript](https://www.typescriptlang.org)
-- [ESLint](https://eslint.org)
-- [Prettier](https://prettier.io)
-- [Shadcn UI](https://ui.shadcn.com)
-- [Lucide Icon](https://lucide.dev)
-- [date-fns](https://date-fns.org)
-- [react-use](https://github.com/streamich/react-use)
-- [es-toolkit](https://github.com/toss/es-toolkit)
-- [Zod](https://zod.dev)
-- [React Query](https://tanstack.com/query/latest)
-- [React Hook Form](https://react-hook-form.com)
-- [TS Pattern](https://github.com/gvergnaud/ts-pattern)
+### API 설계
 
-## 사용 가능한 명령어
+#### 음식점 관련
+- `POST /api/restaurants/search` - 키워드 기반 음식점 검색
+- `GET /api/restaurants/markers` - 지도 마커용 음식점 목록 조회
+- `GET /api/restaurants/:id` - 음식점 상세 정보 조회
+- `POST /api/restaurants` - 새 음식점 정보 저장
 
-한글버전 사용
+#### 리뷰 관련
+- `GET /api/restaurants/:restaurantId/reviews` - 음식점별 리뷰 목록 조회
+- `POST /api/restaurants/:restaurantId/reviews` - 리뷰 작성
+- `POST /api/reviews/:reviewId/verify-password` - 비밀번호 검증 (수정/삭제용)
 
-```sh
-easynext lang ko
-```
+## 🎨 주요 페이지
 
-최신버전으로 업데이트
+### 1. 메인 페이지 (`/`)
+- **네이버 지도**: 전체 화면으로 지도 표시
+- **검색창**: 상단 고정, 음식점 키워드 검색
+- **마커**: 리뷰가 있는 음식점 위치 표시
+- **검색 결과 모달**: 검색 시 상위 10개 결과를 모달로 표시
 
-```sh
-npm i -g @easynext/cli@latest
-# or
-yarn add -g @easynext/cli@latest
-# or
-pnpm add -g @easynext/cli@latest
-```
+### 2. 리뷰 작성 페이지 (`/review/create`)
+- **음식점 정보**: 선택한 음식점의 이름, 주소, 카테고리
+- **리뷰 폼**: 작성자명, 별점 선택, 리뷰 내용, 비밀번호 입력
+- **실시간 유효성 검사**: 입력 중 즉시 피드백
+- **뒤로가기**: 메인 페이지로 복귀
 
-Supabase 설정
+### 3. 음식점 상세 페이지 (`/restaurant/:id`)
+- **음식점 정보**: 이름, 주소, 평균 평점, 리뷰 개수
+- **리뷰 목록**: 최신순으로 정렬된 모든 리뷰
+- **리뷰 작성 버튼**: 리뷰 작성 페이지로 이동
+- **뒤로가기**: 메인 페이지로 복귀
 
-```sh
-easynext supabase
-```
+## 🔐 보안 및 데이터 관리
 
-Next-Auth 설정
+### 비밀번호 보호
+- **bcrypt 해싱**: 리뷰 비밀번호를 암호화하여 DB에 저장
+- **검증 프로세스**: 수정/삭제 시 비밀번호 재확인 필요
+- **Rate Limiting**: API 남용 방지를 위한 요청 제한
 
-```sh
-easynext auth
+### 데이터 무결성
+- **유효성 검사**: Zod 스키마로 클라이언트 및 서버 양측에서 검증
+- **트랜잭션 처리**: 리뷰 작성 시 통계 자동 업데이트
+- **에러 핸들링**: 공통 에러 미들웨어로 일관된 에러 응답
 
-# ID,PW 로그인
-easynext auth idpw
-# 카카오 로그인
-easynext auth kakao
-```
+## 🚀 성능 최적화
 
-유용한 서비스 연동
+### 프론트엔드
+- **React Query 캐싱**: API 응답 캐싱으로 불필요한 요청 감소
+- **디바운싱**: 검색 입력 및 스크롤 이벤트 최적화
+- **코드 스플리팅**: Next.js 자동 코드 분할로 초기 로딩 속도 개선
+- **이미지 최적화**: Next.js Image 컴포넌트 활용
 
-```sh
-# Google Analytics
-easynext gtag
+### 백엔드
+- **인덱싱**: 자주 조회되는 컬럼에 DB 인덱스 설정
+- **쿼리 최적화**: 필요한 컬럼만 선택하여 조회
+- **싱글턴 패턴**: Hono 앱 인스턴스 재사용 (프로덕션 환경)
 
-# Microsoft Clarity
-easynext clarity
+## 📱 사용자 경험 (UX)
 
-# ChannelIO
-easynext channelio
+### 반응형 디자인
+- **모바일 최적화**: 터치 인터페이스 지원
+- **태블릿 지원**: 다양한 화면 크기에 대응
+- **데스크톱 최적화**: 넓은 화면에서의 효율적인 레이아웃
 
-# Sentry
-easynext sentry
+### 접근성 (Accessibility)
+- **시맨틱 HTML**: 스크린 리더 친화적인 마크업
+- **키보드 네비게이션**: 모든 기능을 키보드로 조작 가능
+- **ARIA 레이블**: 보조 기술 지원을 위한 적절한 레이블링
+- **색상 대비**: WCAG 가이드라인 준수
 
-# Google Adsense
-easynext adsense
-```
+### 에러 처리
+- **명확한 메시지**: 사용자 친화적인 에러 안내
+- **재시도 옵션**: 네트워크 에러 시 재시도 버튼 제공
+- **폴백 UI**: 지도 로드 실패 시에도 검색 기능 유지
+
+## 🎓 학습 포인트
+
+이 프로젝트는 다음과 같은 현대적인 웹 개발 기술과 패턴을 학습하고 적용한 결과물입니다:
+
+### 1. **풀스택 아키텍처**
+- Next.js App Router를 활용한 서버/클라이언트 통합
+- Hono.js를 Next.js API Routes에 통합하는 하이브리드 접근
+
+### 2. **타입 안전성**
+- TypeScript로 전체 코드베이스 작성
+- Zod를 활용한 런타임 타입 검증
+- 프론트엔드와 백엔드 간 타입 공유
+
+### 3. **모듈화 설계**
+- Feature-based 디렉토리 구조
+- 재사용 가능한 컴포넌트 및 훅
+- 관심사의 분리 (Separation of Concerns)
+
+### 4. **외부 API 통합**
+- 네이버 지도 SDK 활용
+- 네이버 검색 API 프록시 구현
+- 에러 핸들링 및 재시도 로직
+
+### 5. **상태 관리**
+- React Query로 서버 상태 관리
+- Zustand로 클라이언트 전역 상태 관리
+- React Hook Form으로 폼 상태 관리
+
+### 6. **데이터베이스 설계**
+- PostgreSQL 스키마 설계
+- 관계형 데이터 모델링
+- 마이그레이션 관리
+
+### 7. **보안 고려사항**
+- 비밀번호 해싱 (bcrypt)
+- SQL Injection 방지 (Supabase 파라미터화 쿼리)
+- XSS 방지 (React 자동 이스케이핑)
+
+## 🎯 프로젝트 목표 달성
+
+### ✅ 핵심 기능 구현
+- [x] 네이버 지도 기반 맛집 위치 시각화
+- [x] 키워드 기반 맛집 검색 (상위 10개 결과)
+- [x] 리뷰 작성 및 평점 등록 (별점 5점 만점)
+- [x] 음식점별 리뷰 조회 및 평균 평점 확인
+- [x] 지도 마커를 통한 리뷰 존재 음식점 표시
+
+### ✅ 비기능 요구사항
+- [x] 로그인 없이 즉시 사용 가능
+- [x] 반응형 디자인 (모바일, 태블릿, 데스크톱)
+- [x] 빠른 페이지 로딩 및 API 응답
+- [x] 명확한 에러 메시지 및 재시도 옵션
+- [x] 접근성 고려 (시맨틱 HTML, ARIA)
+
+## 🔮 향후 확장 가능성
+
+### Phase 2 - 기능 개선
+- 리뷰 정렬 기능 (최신순, 평점 높은순, 평점 낮은순)
+- 리뷰 수정/삭제 기능 (비밀번호 인증)
+- 무한 스크롤 또는 페이지네이션
+
+### Phase 3 - 추가 기능
+- 리뷰 이미지 업로드
+- 음식점 즐겨찾기 (Local Storage)
+- 검색 히스토리 및 자동완성
+- 음식점 카테고리 필터링
+
+### Phase 4 - 최적화
+- SEO 최적화 (메타 태그, 구조화된 데이터)
+- 성능 모니터링 (Google Analytics, Sentry)
+- 이미지 압축 및 레이지 로딩
+- PWA 지원 (오프라인 모드)
+
+## 📄 라이선스
+
+이 프로젝트는 **바이브코딩의 포트폴리오 목적**으로 개발되었습니다.
+
+## 👨‍💻 개발자
+
+**바이브코딩 (VibeCoding)**
+
+---
+
+> 💡 **Note**: 이 프로젝트는 실제 서비스가 아닌 기술 학습 및 포트폴리오 목적으로 개발되었습니다.
